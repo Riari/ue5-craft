@@ -3,7 +3,7 @@
 UPlayerAttributeSet::UPlayerAttributeSet()
 	: Stamina{0.0f}
 	, MaxStamina{100.0f}
-	, StaminaRegen{1.0f}
+	, StaminaRegen{2.0f}
 {
 }
 

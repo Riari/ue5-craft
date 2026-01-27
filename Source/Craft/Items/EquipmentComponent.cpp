@@ -15,7 +15,7 @@ void UEquipmentComponent::BeginPlay()
 	Character = Cast<ACraftCharacter>(GetOwner());
 }
 
-void UEquipmentComponent::EquipMainHandItem(UItemDefinition* ItemDefinition)
+AEquippableItem* UEquipmentComponent::EquipMainHandItem(UItemDefinition* ItemDefinition)
 {
 	FVector Location(0.0f, 0.0f, 0.0f);
 	FRotator Rotation(0.0f, 0.0f, 0.0f);
@@ -32,7 +32,11 @@ void UEquipmentComponent::EquipMainHandItem(UItemDefinition* ItemDefinition)
 		Item->SetDefinition(ItemDefinition);
 		Item->Equip(Character);
 		MainHandItem = Item;
+
+		return Item;
 	}
+
+	return nullptr;
 }
 
 void UEquipmentComponent::UnequipMainHandItem()

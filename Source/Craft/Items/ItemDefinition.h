@@ -2,15 +2,16 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
+#include "ItemType.h"
 #include "ItemDefinition.generated.h"
 
 UENUM(BlueprintType)
 enum class EItemRarity : uint8
 {
-	Common = 0,
-	Uncommon = 1,
-	Rare = 2,
-	Legendary = 3,
+	Common,
+	Uncommon,
+	Rare,
+	Legendary,
 };
 
 UCLASS(BlueprintType)
@@ -21,6 +22,9 @@ class CRAFT_API UItemDefinition : public UPrimaryDataAsset
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
 	FText ItemName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
+	EItemType Type;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
 	UTexture2D* Icon;

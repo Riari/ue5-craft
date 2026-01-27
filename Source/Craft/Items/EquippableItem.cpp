@@ -1,16 +1,37 @@
 #include "EquippableItem.h"
 
 #include "AbilitySystemComponent.h"
+#include "NiagaraFunctionLibrary.h"
 #include "Craft/CraftCharacter.h"
 #include "Craft/Abilities/BaseGameplayAbility.h"
+#include "Craft/Interfaces/Harvestable.h"
+#include "Kismet/GameplayStatics.h"
 
 AEquippableItem::AEquippableItem()
 {
-	StaticMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(FName("MeshComponent"));
-	StaticMeshComponent->CanCharacterStepUpOn = ECB_No;
-	StaticMeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	StaticMeshComponent->SetCollisionResponseToAllChannels(ECR_Overlap);
-	SetRootComponent(StaticMeshComponent);
+	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(FName("MeshComponent"));
+	StaticMesh->CanCharacterStepUpOn = ECB_No;
+	StaticMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	StaticMesh->SetCollisionResponseToAllChannels(ECR_Overlap);
+	SetRootComponent(StaticMesh);
+
+	HitSphere = CreateDefaultSubobject<USphereComponent>(FName("HitSphere"));
+	HitSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	HitSphere->SetupAttachment(StaticMesh);
+}
+
+void AEquippableItem::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	OnActorBeginOverlap.AddDynamic(this, &AEquippableItem::OnBeginOverlap);
+}
+
+void AEquippableItem::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+
+	OnActorEndOverlap.RemoveAll(this);
 }
 
 void AEquippableItem::Equip(ACraftCharacter* CraftCharacter)
@@ -25,8 +46,10 @@ void AEquippableItem::Equip(ACraftCharacter* CraftCharacter)
 		}
 	}
 
-	StaticMeshComponent->AttachToComponent(CraftCharacter->GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, TEXT("Socket_HandR"));
+	StaticMesh->AttachToComponent(CraftCharacter->GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, TEXT("Socket_HandR"));
 	Character = CraftCharacter;
+
+	Character->GetMesh()->GetAnimInstance()->OnPlayMontageNotifyBegin.AddDynamic(this, &AEquippableItem::OnMontageNotifyBegin);
 }
 
 void AEquippableItem::Unequip(ACraftCharacter* CraftCharacter)
@@ -41,5 +64,78 @@ void AEquippableItem::Unequip(ACraftCharacter* CraftCharacter)
 		GrantedAbilities.Reset();
 	}
 
+	Character->GetMesh()->GetAnimInstance()->OnPlayMontageNotifyBegin.RemoveAll(this);
 	Character = nullptr;
+}
+
+void AEquippableItem::OnBeginOverlap(AActor* OverlappedActor, AActor* OtherActor)
+{
+	bool bValidHit = false;
+	if (OtherActor->Implements<UHarvestable>())
+	{
+		EItemType RequiredToolType = IHarvestable::Execute_GetRequiredToolType(OtherActor);
+
+		if (RequiredToolType == Definition->Type)
+		{
+			DrawDebugSphere(GetWorld(), HitSphere->GetComponentLocation(), 10, 12, FColor::Green, false, 1.0f);
+			bValidHit = true;
+		}
+		else
+		{
+			// TODO: Notify the player?
+		}
+	}
+
+	if (bValidHit)
+	{
+		if (HitSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(
+				GetWorld(),
+				HitSound,
+				HitSphere->GetComponentLocation()
+			);
+		}
+
+		if (HitParticles)
+		{
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+				GetWorld(),
+				HitParticles,
+				HitSphere->GetComponentLocation(),
+				Character->GetActorRotation()
+			);
+		}
+
+		if (HitCameraShakeClass)
+		{
+			Character->GetLocalViewingPlayerController()->ClientStartCameraShake(
+				HitCameraShakeClass,
+				1.0f,
+				ECameraShakePlaySpace::CameraLocal,
+				FRotator::ZeroRotator
+			);
+		}
+	}
+
+	HitSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
+void AEquippableItem::OnMontageNotifyBegin(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPointPayload)
+{
+	if (NotifyName == "CollisionEnd")
+	{
+		HitSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+}
+
+void AEquippableItem::ExecutePrimaryAction_Implementation()
+{
+	OnExecutePrimaryAction.ExecuteIfBound(PrimaryActionMontage);
+	HitSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+}
+
+void AEquippableItem::ExecuteSecondaryAction_Implementation()
+{
+	OnExecuteSecondaryAction.ExecuteIfBound(SecondaryActionMontage);
 }

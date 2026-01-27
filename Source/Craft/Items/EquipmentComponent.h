@@ -14,7 +14,7 @@ public:
 
 	virtual void BeginPlay() override;
 
-	void EquipMainHandItem(class UItemDefinition* ItemDefinition);
+	class AEquippableItem* EquipMainHandItem(class UItemDefinition* ItemDefinition);
 	void UnequipMainHandItem();
 
 	UFUNCTION(BlueprintCallable, Category = "Abilities")
@@ -24,9 +24,9 @@ public:
 	void ExecuteSecondaryAction();
 
 protected:
-	class ACraftCharacter* Character;
+	TObjectPtr<class ACraftCharacter> Character;
 
-	class AEquippableItem* MainHandItem;
-	class AEquippableItem* OffHandItem;
+	TObjectPtr<class AEquippableItem> MainHandItem;
+	TObjectPtr<class AEquippableItem> OffHandItem;
 		
 };
