@@ -88,6 +88,24 @@ void AEquippableItem::OnBeginOverlap(AActor* OverlappedActor, AActor* OtherActor
 
 	if (bValidHit)
 	{
+		if (OtherActor->Implements<UAbilitySystemInterface>())
+		{
+			UAbilitySystemComponent* OtherASC = OtherActor->FindComponentByClass<UAbilitySystemComponent>();
+			if (OtherASC)
+			{
+				for (TSubclassOf<UGameplayEffect>& HitEffectClass : HitEffects)
+				{
+					FGameplayEffectContextHandle EffectContext = OtherASC->MakeEffectContext();
+					FGameplayEffectSpecHandle SpecHandle = OtherASC->MakeOutgoingSpec(HitEffectClass, 1.0f, EffectContext);
+	 
+					if (SpecHandle.IsValid())
+					{
+						OtherASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+					}
+				}
+			}
+		}
+
 		if (HitSound)
 		{
 			UGameplayStatics::PlaySoundAtLocation(

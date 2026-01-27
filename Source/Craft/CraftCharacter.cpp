@@ -13,8 +13,9 @@
 #include "GameplayAbilitySpecHandle.h"
 #include "InputActionValue.h"
 #include "Abilities/BaseGameplayAbility.h"
+#include "Abilities/HealthAttributeSet.h"
 #include "Abilities/InputID.h"
-#include "Abilities/PlayerAttributeSet.h"
+#include "Abilities/StaminaAttributeSet.h"
 #include "Items/EquipmentComponent.h"
 #include "Items/ItemContainerComponent.h"
 
@@ -25,7 +26,8 @@ DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
 ACraftCharacter::ACraftCharacter()
 	: AbilitySystemComponent{CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"))}
-	, AttributeSet{CreateDefaultSubobject<UPlayerAttributeSet>(TEXT("AttributeSet"))}
+	, StaminaAttributeSet{CreateDefaultSubobject<UStaminaAttributeSet>(TEXT("StaminaAttributeSet"))}
+	, HealthAttributeSet{CreateDefaultSubobject<UHealthAttributeSet>(TEXT("HealthAttributeSet"))}
 {
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 
@@ -71,10 +73,16 @@ void ACraftCharacter::BeginPlay()
 
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);
 
+	InitializeAttributes();
 	InitializeAbilities();
 	InitializeEffects();
+}
 
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetStaminaAttribute()).AddUObject(this, &ACraftCharacter::OnStaminaAttributeChanged);
+void ACraftCharacter::InitializeAttributes()
+{
+	if (!AbilitySystemComponent) return;
+
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(StaminaAttributeSet->GetStaminaAttribute()).AddUObject(this, &ThisClass::OnStaminaAttributeChanged);
 }
 
 void ACraftCharacter::InitializeAbilities()
@@ -121,7 +129,7 @@ void ACraftCharacter::AnimNotify(FName NotifyName)
 
 void ACraftCharacter::OnStaminaAttributeChanged(const FOnAttributeChangeData& Data)
 {
-	OnStaminaChanged(Data.OldValue, Data.NewValue);
+	OnStaminaChanged(Data.OldValue, Data.NewValue, StaminaAttributeSet->GetMaxStamina());
 }
 
 void ACraftCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -186,6 +194,13 @@ void ACraftCharacter::Move(const FInputActionValue& Value)
 
 		AddMovementInput(ForwardDirection, MovementVector.Y);
 		AddMovementInput(RightDirection, MovementVector.X);
+
+		if (!MovementVector.IsNearlyZero())
+		{
+			FRotator NewRotation = GetActorRotation();
+			NewRotation.Yaw = Rotation.Yaw;
+			SetActorRotation(NewRotation);
+		}
 	}
 }
 

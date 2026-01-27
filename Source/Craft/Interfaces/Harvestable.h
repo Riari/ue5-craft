@@ -16,6 +16,6 @@ class CRAFT_API IHarvestable
 	GENERATED_BODY()
 
 public:
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Harvesting")
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Harvestable")
 	EItemType GetRequiredToolType() const;
 };

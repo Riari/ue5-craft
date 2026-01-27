@@ -1,0 +1,40 @@
+#pragma once
+
+#include "CoreMinimal.h"
+#include "AbilitySystemInterface.h"
+#include "Abilities/HealthAttributeSet.h"
+#include "GameFramework/Actor.h"
+#include "Interfaces/Damageable.h"
+#include "ResourceNode.generated.h"
+
+UCLASS(Blueprintable, BlueprintType)
+class CRAFT_API AResourceNode : public AActor, public IAbilitySystemInterface, public IDamageable
+{
+	GENERATED_BODY()
+
+public:
+	AResourceNode();
+
+	virtual void BeginPlay() override;
+
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+
+	virtual void ApplyDamage_Implementation(float Damage, AActor* DamageCauser, AController* InstigatorController) override;
+
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = true))
+	TObjectPtr<class UAbilitySystemComponent> AbilitySystemComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = true))
+	TObjectPtr<class UHealthAttributeSet> HealthAttributeSet;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
+	TObjectPtr<class USoundBase> DestroySound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
+	TObjectPtr<class UNiagaraSystem> DestroyParticles;
+
+	void InitializeAttributes();
+
+	void OnHealthAttributeChanged(const FOnAttributeChangeData& Data);
+};

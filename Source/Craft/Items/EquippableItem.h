@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "BaseItem.h"
 #include "GameplayAbilitySpecHandle.h"
+#include "GameplayEffect.h"
 #include "../../../../../../../../Program Files/Epic Games/UE_5.4/Engine/Plugins/FX/Niagara/Source/Niagara/Classes/NiagaraSystem.h"
 #include "Components/SphereComponent.h"
 #include "EquippableItem.generated.h"
@@ -41,6 +42,10 @@ protected:
 	// The item mesh
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
 	TObjectPtr<UStaticMeshComponent> StaticMesh;
+
+	// Gameplay effects to apply to valid object on hit
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
+	TArray<TSubclassOf<UGameplayEffect>> HitEffects;
 
 	// Sphere used to detect collision with other objects
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))

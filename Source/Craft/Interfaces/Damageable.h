@@ -15,9 +15,6 @@ class CRAFT_API IDamageable
 	GENERATED_BODY()
 
 public:
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Damage")
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Damageable")
 	void ApplyDamage(float Damage, AActor* DamageCauser, AController* InstigatorController);
-    
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Damage")
-	bool IsDead() const;
 };

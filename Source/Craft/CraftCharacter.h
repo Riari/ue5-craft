@@ -83,7 +83,10 @@ protected:
 	TObjectPtr<class UAbilitySystemComponent> AbilitySystemComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = true))
-	TObjectPtr<class UPlayerAttributeSet> AttributeSet;
+	TObjectPtr<class UStaminaAttributeSet> StaminaAttributeSet;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = true))
+	TObjectPtr<class UHealthAttributeSet> HealthAttributeSet;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Abilities)
 	TArray<TSubclassOf<class UBaseGameplayAbility>> DefaultAbilities;
@@ -114,7 +117,7 @@ public:
 	void OnStaminaAttributeChanged(const FOnAttributeChangeData& Data);
 	
 	UFUNCTION(BlueprintImplementableEvent)
-	void OnStaminaChanged(const float OldValue, const float NewValue);
+	void OnStaminaChanged(const float OldValue, const float NewValue, const float MaxValue);
 
 	UFUNCTION(BlueprintCallable)
 	void OnItemPickUp(ABaseItem* Item)
@@ -127,6 +130,7 @@ public:
 	}
 
 protected:
+	void InitializeAttributes();
 	void InitializeAbilities();
 	void InitializeEffects();
 
