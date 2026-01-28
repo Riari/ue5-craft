@@ -38,10 +38,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
 	TArray<TSubclassOf<UGameplayEffect>> HitEffects;
 
-	// Sphere used to detect collision with other objects
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
-	TObjectPtr<USphereComponent> HitSphere;
-
 	// Sound to play when hitting a valid object
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
 	TObjectPtr<USoundBase> HitSound;

@@ -14,10 +14,6 @@ AEquippableItem::AEquippableItem()
 	StaticMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	StaticMesh->SetCollisionResponseToAllChannels(ECR_Overlap);
 	SetRootComponent(StaticMesh);
-
-	HitSphere = CreateDefaultSubobject<USphereComponent>(FName("HitSphere"));
-	HitSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	HitSphere->SetupAttachment(StaticMesh);
 }
 
 void AEquippableItem::BeginPlay()
@@ -37,6 +33,7 @@ void AEquippableItem::EndPlay(const EEndPlayReason::Type EndPlayReason)
 bool AEquippableItem::TryEquip(ACraftCharacter* CraftCharacter)
 {
 	SetActorHiddenInGame(false);
+	StaticMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	if (UAbilitySystemComponent* ASC = CraftCharacter->GetAbilitySystemComponent())
 	{
@@ -92,12 +89,12 @@ void AEquippableItem::OnBeginOverlap(AActor* OverlappedActor, AActor* OtherActor
 		}
 	}
 
-	HitSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	StaticMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 void AEquippableItem::OnHit(AActor* OtherActor)
 {
-	DrawDebugSphere(GetWorld(), HitSphere->GetComponentLocation(), 10, 12, FColor::Green, false, 1.0f);
+	DrawDebugSphere(GetWorld(), StaticMesh->GetComponentLocation(), 10, 12, FColor::Green, false, 1.0f);
 			
 	IHittable::Execute_OnHit(OtherActor);
 
@@ -106,7 +103,7 @@ void AEquippableItem::OnHit(AActor* OtherActor)
 		UGameplayStatics::PlaySoundAtLocation(
 			GetWorld(),
 			HitSound,
-			HitSphere->GetComponentLocation()
+			StaticMesh->GetComponentLocation()
 		);
 	}
 
@@ -115,7 +112,7 @@ void AEquippableItem::OnHit(AActor* OtherActor)
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			GetWorld(),
 			HitParticles,
-			HitSphere->GetComponentLocation(),
+			StaticMesh->GetComponentLocation(),
 			Character->GetActorRotation()
 		);
 	}
@@ -151,16 +148,19 @@ void AEquippableItem::OnHit(AActor* OtherActor)
 
 void AEquippableItem::OnMontageNotifyBegin(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPointPayload)
 {
-	if (NotifyName == "CollisionEnd")
+	if (NotifyName == "CollisionStart")
 	{
-		HitSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		StaticMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	}
+	else if (NotifyName == "CollisionEnd")
+	{
+		StaticMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 }
 
 void AEquippableItem::ExecutePrimaryAction()
 {
 	OnExecutePrimaryAction.ExecuteIfBound(PrimaryActionMontage);
-	HitSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 }
 
 void AEquippableItem::ExecuteSecondaryAction()
