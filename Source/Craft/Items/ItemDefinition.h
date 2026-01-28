@@ -1,18 +1,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
+#include "ItemRarity.h"
 #include "Engine/DataAsset.h"
-#include "ItemType.h"
 #include "ItemDefinition.generated.h"
-
-UENUM(BlueprintType)
-enum class EItemRarity : uint8
-{
-	Common,
-	Uncommon,
-	Rare,
-	Legendary,
-};
 
 UCLASS(BlueprintType)
 class CRAFT_API UItemDefinition : public UPrimaryDataAsset
@@ -24,23 +16,20 @@ public:
 	FText ItemName;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
-	EItemType Type;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
 	UTexture2D* Icon;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
 	EItemRarity Rarity;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
-	int MaxStackSize{1};
+	int32 Grade;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
-	bool IsEquippable{false};
+	int32 MaxStackSize{1};
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item", meta = (EditCondition = "IsEquippable"))
-	TSubclassOf<class AEquippableItem> EquipmentItemClass;
-	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
-	bool IsConsumable{false};
+	FGameplayTagContainer Tags;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
+	TSubclassOf<class AActor> ActorClass;
 };

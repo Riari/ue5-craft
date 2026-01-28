@@ -4,7 +4,7 @@
 #include "NiagaraFunctionLibrary.h"
 #include "Craft/CraftCharacter.h"
 #include "Craft/Abilities/BaseGameplayAbility.h"
-#include "Craft/Interfaces/Harvestable.h"
+#include "Craft/Interfaces/Hittable.h"
 #include "Kismet/GameplayStatics.h"
 
 AEquippableItem::AEquippableItem()
@@ -34,8 +34,10 @@ void AEquippableItem::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	OnActorEndOverlap.RemoveAll(this);
 }
 
-void AEquippableItem::Equip(ACraftCharacter* CraftCharacter)
+bool AEquippableItem::TryEquip(ACraftCharacter* CraftCharacter)
 {
+	SetActorHiddenInGame(false);
+
 	if (UAbilitySystemComponent* ASC = CraftCharacter->GetAbilitySystemComponent())
 	{
 		for (TSubclassOf<UBaseGameplayAbility>& Ability : Abilities)
@@ -46,14 +48,23 @@ void AEquippableItem::Equip(ACraftCharacter* CraftCharacter)
 		}
 	}
 
-	StaticMesh->AttachToComponent(CraftCharacter->GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, TEXT("Socket_HandR"));
+	StaticMesh->AttachToComponent(CraftCharacter->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Socket_HandR"));
 	Character = CraftCharacter;
 
-	Character->GetMesh()->GetAnimInstance()->OnPlayMontageNotifyBegin.AddDynamic(this, &AEquippableItem::OnMontageNotifyBegin);
+	USkeletalMeshComponent* Mesh = Character ? Character->GetMesh() : nullptr;
+	UAnimInstance* AnimInstance = Mesh ? Mesh->GetAnimInstance() : nullptr;
+	
+	ensureMsgf(AnimInstance, TEXT("Character %s does not have an AnimInstance"), *GetNameSafe(Character));
+	
+	AnimInstance->OnPlayMontageNotifyBegin.AddDynamic(this, &AEquippableItem::OnMontageNotifyBegin);
+	
+	return true;
 }
 
 void AEquippableItem::Unequip(ACraftCharacter* CraftCharacter)
 {
+	SetActorHiddenInGame(true);
+
 	if (UAbilitySystemComponent* ASC = CraftCharacter->GetAbilitySystemComponent())
 	{
 		for (FGameplayAbilitySpecHandle& AbilityHandle : GrantedAbilities)
@@ -70,73 +81,72 @@ void AEquippableItem::Unequip(ACraftCharacter* CraftCharacter)
 
 void AEquippableItem::OnBeginOverlap(AActor* OverlappedActor, AActor* OtherActor)
 {
-	bool bValidHit = false;
-	if (OtherActor->Implements<UHarvestable>())
+	if (OtherActor->Implements<UHittable>())
 	{
-		EItemType RequiredToolType = IHarvestable::Execute_GetRequiredToolType(OtherActor);
+		FGameplayTagQuery ValidItemTagQuery = IHittable::Execute_GetValidItemTagQuery(OtherActor);
+		int32 MinimumValidItemGrade = IHittable::Execute_GetMinimumValidItemGrade(OtherActor);
 
-		if (RequiredToolType == Definition->Type)
+		if (ValidItemTagQuery.Matches(Definition->Tags) && Definition->Grade >= MinimumValidItemGrade)
 		{
-			DrawDebugSphere(GetWorld(), HitSphere->GetComponentLocation(), 10, 12, FColor::Green, false, 1.0f);
-			bValidHit = true;
-		}
-		else
-		{
-			// TODO: Notify the player?
-		}
-	}
-
-	if (bValidHit)
-	{
-		if (OtherActor->Implements<UAbilitySystemInterface>())
-		{
-			UAbilitySystemComponent* OtherASC = OtherActor->FindComponentByClass<UAbilitySystemComponent>();
-			if (OtherASC)
-			{
-				for (TSubclassOf<UGameplayEffect>& HitEffectClass : HitEffects)
-				{
-					FGameplayEffectContextHandle EffectContext = OtherASC->MakeEffectContext();
-					FGameplayEffectSpecHandle SpecHandle = OtherASC->MakeOutgoingSpec(HitEffectClass, 1.0f, EffectContext);
-	 
-					if (SpecHandle.IsValid())
-					{
-						OtherASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-					}
-				}
-			}
-		}
-
-		if (HitSound)
-		{
-			UGameplayStatics::PlaySoundAtLocation(
-				GetWorld(),
-				HitSound,
-				HitSphere->GetComponentLocation()
-			);
-		}
-
-		if (HitParticles)
-		{
-			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-				GetWorld(),
-				HitParticles,
-				HitSphere->GetComponentLocation(),
-				Character->GetActorRotation()
-			);
-		}
-
-		if (HitCameraShakeClass)
-		{
-			Character->GetLocalViewingPlayerController()->ClientStartCameraShake(
-				HitCameraShakeClass,
-				1.0f,
-				ECameraShakePlaySpace::CameraLocal,
-				FRotator::ZeroRotator
-			);
+			OnHit(OtherActor);
 		}
 	}
 
 	HitSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
+void AEquippableItem::OnHit(AActor* OtherActor)
+{
+	DrawDebugSphere(GetWorld(), HitSphere->GetComponentLocation(), 10, 12, FColor::Green, false, 1.0f);
+			
+	IHittable::Execute_OnHit(OtherActor);
+
+	if (HitSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(
+			GetWorld(),
+			HitSound,
+			HitSphere->GetComponentLocation()
+		);
+	}
+
+	if (HitParticles)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(),
+			HitParticles,
+			HitSphere->GetComponentLocation(),
+			Character->GetActorRotation()
+		);
+	}
+
+	if (HitCameraShakeClass)
+	{
+		Character->GetLocalViewingPlayerController()->ClientStartCameraShake(
+			HitCameraShakeClass,
+			1.0f,
+			ECameraShakePlaySpace::CameraLocal,
+			FRotator::ZeroRotator
+		);
+	}
+
+	if (OtherActor->Implements<UAbilitySystemInterface>())
+	{
+		UAbilitySystemComponent* OtherASC = OtherActor->FindComponentByClass<UAbilitySystemComponent>();
+		if (OtherASC)
+		{
+			for (TSubclassOf<UGameplayEffect>& HitEffectClass : HitEffects)
+			{
+				FGameplayEffectContextHandle EffectContext = OtherASC->MakeEffectContext();
+				FGameplayEffectSpecHandle SpecHandle = OtherASC->MakeOutgoingSpec(HitEffectClass, 1.0f, EffectContext);
+	 
+				if (SpecHandle.IsValid())
+				{
+					OtherASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+				}
+			}
+		}
+	}
 }
 
 void AEquippableItem::OnMontageNotifyBegin(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPointPayload)
@@ -147,13 +157,13 @@ void AEquippableItem::OnMontageNotifyBegin(FName NotifyName, const FBranchingPoi
 	}
 }
 
-void AEquippableItem::ExecutePrimaryAction_Implementation()
+void AEquippableItem::ExecutePrimaryAction()
 {
 	OnExecutePrimaryAction.ExecuteIfBound(PrimaryActionMontage);
 	HitSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 }
 
-void AEquippableItem::ExecuteSecondaryAction_Implementation()
+void AEquippableItem::ExecuteSecondaryAction()
 {
 	OnExecuteSecondaryAction.ExecuteIfBound(SecondaryActionMontage);
 }

@@ -1,10 +1,8 @@
 #include "BaseItem.h"
 
-// Sets default values
 ABaseItem::ABaseItem()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
 }
 
@@ -18,17 +16,24 @@ UItemDefinition* ABaseItem::GetDefinition() const
 	return Definition;
 }
 
-// Called when the game starts or when spawned
-void ABaseItem::BeginPlay()
+bool ABaseItem::TryEquip(class ACraftCharacter* Character)
 {
-	Super::BeginPlay();
-	
+	return false;
 }
 
-// Called every frame
-void ABaseItem::Tick(float DeltaTime)
+void ABaseItem::Unequip(class ACraftCharacter* Character)
 {
-	Super::Tick(DeltaTime);
-
+	// no-op
 }
+
+void ABaseItem::ExecutePrimaryAction()
+{
+	// no-op
+}
+
+void ABaseItem::ExecuteSecondaryAction()
+{
+	// no-op
+}
+
 

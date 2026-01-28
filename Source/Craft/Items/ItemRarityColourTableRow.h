@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "ItemDefinition.h"
+#include "ItemRarity.h"
 #include "Engine/DataTable.h"
 #include "ItemRarityColourTableRow.generated.h"
 

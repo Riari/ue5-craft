@@ -5,27 +5,31 @@
 #include "GameFramework/Actor.h"
 #include "BaseItem.generated.h"
 
+DECLARE_DELEGATE_OneParam(FOnExecutePrimaryAction, TObjectPtr<UAnimMontage>);
+DECLARE_DELEGATE_OneParam(FOnExecuteSecondaryAction, TObjectPtr<UAnimMontage>);
+
 UCLASS()
 class CRAFT_API ABaseItem : public AActor
 {
 	GENERATED_BODY()
 	
 public:	
-	// Sets default values for this actor's properties
 	ABaseItem();
 
 	void SetDefinition(UItemDefinition* ItemDefinition);
 	UItemDefinition* GetDefinition() const;
+	
+	virtual bool TryEquip(class ACraftCharacter* Character);
+	virtual void Unequip(class ACraftCharacter* Character);
+
+	virtual void ExecutePrimaryAction();
+	virtual void ExecuteSecondaryAction();
+
+	FOnExecutePrimaryAction OnExecutePrimaryAction;
+	FOnExecuteSecondaryAction OnExecuteSecondaryAction;
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true));
 	UItemDefinition* Definition;
-
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
-
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
 
 };

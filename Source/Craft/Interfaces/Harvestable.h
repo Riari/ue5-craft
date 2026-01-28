@@ -1,7 +1,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Craft/Items/ItemType.h"
 #include "UObject/Interface.h"
 #include "Harvestable.generated.h"
 
@@ -17,5 +16,8 @@ class CRAFT_API IHarvestable
 
 public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Harvestable")
-	EItemType GetRequiredToolType() const;
+	TSubclassOf<UItemDefinition> GetResourceItemClass() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Harvestable")
+	int32 GetResourceQuantityPerHit() const;
 };

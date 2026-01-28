@@ -4,11 +4,10 @@
 #include "AbilitySystemInterface.h"
 #include "Abilities/HealthAttributeSet.h"
 #include "GameFramework/Actor.h"
-#include "Interfaces/Damageable.h"
 #include "ResourceNode.generated.h"
 
 UCLASS(Blueprintable, BlueprintType)
-class CRAFT_API AResourceNode : public AActor, public IAbilitySystemInterface, public IDamageable
+class CRAFT_API AResourceNode : public AActor, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
@@ -18,8 +17,6 @@ public:
 	virtual void BeginPlay() override;
 
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
-
-	virtual void ApplyDamage_Implementation(float Damage, AActor* DamageCauser, AController* InstigatorController) override;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = true))

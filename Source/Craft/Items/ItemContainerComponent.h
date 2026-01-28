@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "BaseItem.h"
 #include "ItemDefinition.h"
 #include "Components/ActorComponent.h"
 #include "ItemContainerComponent.generated.h"
@@ -12,6 +13,9 @@ struct FInventorySlot
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UItemDefinition* ItemDefinition;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TObjectPtr<ABaseItem> ItemActor;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 Quantity = 0;
@@ -48,6 +52,9 @@ struct FSlotActivationResult
 
 	UPROPERTY(BlueprintReadOnly)
 	UItemDefinition* ItemDefinition = nullptr;
+	
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<ABaseItem> ItemActor = nullptr;
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FSlotDelegate, int32, Index, FInventorySlot, Slot);
@@ -63,13 +70,10 @@ public:
 	virtual void BeginPlay() override;
 
 	UFUNCTION(BlueprintCallable)
-	int32 FindFirstEmptySlotIndex();
+	int32 FindFirstUsableSlotIndex(const UItemDefinition* ItemDefinition, int32 RequiredCapacity = 1);
 
 	UFUNCTION(BlueprintCallable)
-	FSlotTransactionResult AddItemByDefinition(UItemDefinition* ItemDefinition, int32 Quantity, int32 SlotIndex = 0);
-
-	UFUNCTION(BlueprintCallable)
-	FSlotTransactionResult AddItemByActor(ABaseItem* Item, int32 Quantity, int32 SlotIndex = 0);
+	FSlotTransactionResult AddItem(ABaseItem* Item, int32 Quantity, int32 SlotIndex = 0);
 
 	FSlotActivationResult TryActivateSlot(int32 SlotIndex);
 

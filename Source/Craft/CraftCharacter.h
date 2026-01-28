@@ -119,15 +119,12 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnStaminaChanged(const float OldValue, const float NewValue, const float MaxValue);
 
+	bool TrySpawnItemToInventory(TSubclassOf<ABaseItem> ItemClass, int32 Quantity = 1);
+
 	UFUNCTION(BlueprintCallable)
-	void OnItemPickUp(ABaseItem* Item)
-	{
-		int HotbarSlotIndex = HotbarContainer->FindFirstEmptySlotIndex();
-		if (HotbarSlotIndex != -1)
-		{
-			HotbarContainer->AddItemByActor(Item, 1, HotbarSlotIndex);
-		}
-	}
+	void OnItemPickUp(ABaseItem* Item);
+
+	bool TryAddItemToInventory(ABaseItem* Item, int32 Quantity = 1);
 
 protected:
 	void InitializeAttributes();

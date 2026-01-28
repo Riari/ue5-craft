@@ -132,6 +132,30 @@ void ACraftCharacter::OnStaminaAttributeChanged(const FOnAttributeChangeData& Da
 	OnStaminaChanged(Data.OldValue, Data.NewValue, StaminaAttributeSet->GetMaxStamina());
 }
 
+bool ACraftCharacter::TrySpawnItemToInventory(TSubclassOf<ABaseItem> ItemClass, int32 Quantity)
+{
+	ABaseItem* Item = GetWorld()->SpawnActor<ABaseItem>(ItemClass);
+	return Item && TryAddItemToInventory(Item, Quantity);
+}
+
+void ACraftCharacter::OnItemPickUp(ABaseItem* Item)
+{
+	Item->SetActorHiddenInGame(true);
+	TryAddItemToInventory(Item);
+}
+
+bool ACraftCharacter::TryAddItemToInventory(ABaseItem* Item, int32 Quantity)
+{
+	int HotbarSlotIndex = HotbarContainer->FindFirstUsableSlotIndex(Item->GetDefinition(), Quantity);
+	if (HotbarSlotIndex != -1)
+	{
+		HotbarContainer->AddItem(Item, Quantity, HotbarSlotIndex);
+		return true;
+	}
+
+	return false;
+}
+
 void ACraftCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
@@ -228,19 +252,17 @@ void ACraftCharacter::SecondaryAction(const FInputActionValue& Value)
 void ACraftCharacter::ActivateHotbar(int32 SlotIndex)
 {
 	FSlotActivationResult Result = HotbarContainer->TryActivateSlot(SlotIndex);
+
 	if (Result.Success)
 	{
-		if (Result.ItemDefinition && Result.ItemDefinition->IsEquippable)
+		EquipmentComponent->UnequipMainHandItem();
+
+		if (Result.ItemActor)
 		{
-			AEquippableItem* Item = EquipmentComponent->EquipMainHandItem(Result.ItemDefinition);
-			if (Item)
+			if (EquipmentComponent->TryEquipMainHandItem(Result.ItemActor))
 			{
-				Item->OnExecutePrimaryAction.BindUObject(this, &ACraftCharacter::OnExecutePrimaryAction);
+				Result.ItemActor->OnExecutePrimaryAction.BindUObject(this, &ACraftCharacter::OnExecutePrimaryAction);
 			}
-		}
-		else
-		{
-			EquipmentComponent->UnequipMainHandItem();
 		}
 	}
 }

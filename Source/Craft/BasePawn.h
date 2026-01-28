@@ -3,11 +3,10 @@
 #include "CoreMinimal.h"
 #include "AbilitySystemInterface.h"
 #include "GameFramework/Pawn.h"
-#include "Interfaces/Damageable.h"
 #include "BasePawn.generated.h"
 
 UCLASS(Blueprintable)
-class CRAFT_API ABasePawn : public APawn, public IAbilitySystemInterface, public IDamageable
+class CRAFT_API ABasePawn : public APawn, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 

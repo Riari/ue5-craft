@@ -15,28 +15,17 @@ void UEquipmentComponent::BeginPlay()
 	Character = Cast<ACraftCharacter>(GetOwner());
 }
 
-AEquippableItem* UEquipmentComponent::EquipMainHandItem(UItemDefinition* ItemDefinition)
+bool UEquipmentComponent::TryEquipMainHandItem(ABaseItem* Item)
 {
-	FVector Location(0.0f, 0.0f, 0.0f);
-	FRotator Rotation(0.0f, 0.0f, 0.0f);
-	FActorSpawnParameters SpawnInfo;
-	
-	if (MainHandItem)
+	ensureMsgf(IsValid(Item), TEXT("Item invalid. PendingKill=%d"), Item && Item->IsPendingKillPending());
+
+	if (Item->TryEquip(Character))
 	{
-		MainHandItem->Destroy();
-	}
-	
-	AEquippableItem* Item = Cast<AEquippableItem>(GetWorld()->SpawnActor(ItemDefinition->EquipmentItemClass, &Location, &Rotation, SpawnInfo));
-	if (Item)
-	{
-		Item->SetDefinition(ItemDefinition);
-		Item->Equip(Character);
 		MainHandItem = Item;
-
-		return Item;
+		return true;
 	}
-
-	return nullptr;
+	
+	return false;
 }
 
 void UEquipmentComponent::UnequipMainHandItem()
@@ -44,7 +33,6 @@ void UEquipmentComponent::UnequipMainHandItem()
 	if (MainHandItem)
 	{
 		MainHandItem->Unequip(Character);
-		MainHandItem->Destroy();
 		MainHandItem = nullptr;
 	}
 }

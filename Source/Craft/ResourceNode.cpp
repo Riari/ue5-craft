@@ -28,10 +28,6 @@ UAbilitySystemComponent* AResourceNode::GetAbilitySystemComponent() const
 	return AbilitySystemComponent;
 }
 
-void AResourceNode::ApplyDamage_Implementation(float Damage, AActor* DamageCauser, AController* InstigatorController)
-{
-}
-
 void AResourceNode::InitializeAttributes()
 {
 	if (!AbilitySystemComponent) return;

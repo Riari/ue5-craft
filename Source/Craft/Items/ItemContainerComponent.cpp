@@ -12,17 +12,23 @@ void UItemContainerComponent::BeginPlay()
 	Slots.SetNumZeroed(Capacity);
 }
 
-int32 UItemContainerComponent::FindFirstEmptySlotIndex()
+int32 UItemContainerComponent::FindFirstUsableSlotIndex(const UItemDefinition* ItemDefinition, int32 RequiredCapacity)
 {
+	bool bStackable = ItemDefinition->MaxStackSize > 1;
 	for (int32 i = 0; i < Capacity; i++)
 	{
-		if (Slots[i].IsEmpty()) return i;
+		FInventorySlot& Slot = Slots[i];
+
+		if (Slot.IsEmpty()) return i;
+		
+		int32 RemainingCapacity = Slot.GetRemainingCapacity();
+		if (bStackable && RemainingCapacity >= RequiredCapacity) return i;
 	}
 
 	return -1;
 }
 
-FSlotTransactionResult UItemContainerComponent::AddItemByDefinition(UItemDefinition* ItemDefinition, int32 Quantity, int32 SlotIndex)
+FSlotTransactionResult UItemContainerComponent::AddItem(ABaseItem* Item, int32 Quantity, int32 SlotIndex)
 {
 	FSlotTransactionResult Result{.Success = false};
 
@@ -32,17 +38,13 @@ FSlotTransactionResult UItemContainerComponent::AddItemByDefinition(UItemDefinit
 		// TODO: Implement proper moving and replacement of items
 		// For now, just write to the slot without validating anything
 		Slot.Quantity = Quantity;
-		Slot.ItemDefinition = ItemDefinition;
+		Slot.ItemDefinition = Item->GetDefinition();
+		Slot.ItemActor = Item;
 		Result.Success = true;
 		SlotUpdatedDelegate.Broadcast(SlotIndex, Slot);
 	}
 
 	return Result;
-}
-
-FSlotTransactionResult UItemContainerComponent::AddItemByActor(ABaseItem* Item, int32 Quantity, int32 SlotIndex)
-{
-	return AddItemByDefinition(Item->GetDefinition(), Quantity, SlotIndex);
 }
 
 FSlotActivationResult UItemContainerComponent::TryActivateSlot(int32 SlotIndex)
@@ -59,27 +61,14 @@ FSlotActivationResult UItemContainerComponent::ActivateSlot(int32 SlotIndex)
 		return {.Success = false};
 
 	FInventorySlot& Slot = Slots[SlotIndex];
-	if (Slot.IsEmpty())
-	{
-		ActiveSlot = SlotIndex;
-		SlotActivatedDelegate.Broadcast(SlotIndex, Slot);
-		return {.Success = true};
-	}
-
-	if (Slot.ItemDefinition)
-	{
-		if (Slot.ItemDefinition->IsEquippable)
-		{
-			ActiveSlot = SlotIndex;
-			SlotActivatedDelegate.Broadcast(SlotIndex, Slot);
-			return {
-				.Success = true,
-				.ItemDefinition = Slot.ItemDefinition,
-			};
-		}
-	}
+	ActiveSlot = SlotIndex;
+	SlotActivatedDelegate.Broadcast(SlotIndex, Slot);
 	
-	return {.Success = false};
+	return {
+		.Success = true,
+		.ItemDefinition = Slot.ItemDefinition,
+		.ItemActor = Slot.ItemActor
+	};
 }
 
 FSlotActivationResult UItemContainerComponent::DeactivateSlot(int32 SlotIndex)

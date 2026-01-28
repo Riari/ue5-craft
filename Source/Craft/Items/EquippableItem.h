@@ -4,12 +4,9 @@
 #include "BaseItem.h"
 #include "GameplayAbilitySpecHandle.h"
 #include "GameplayEffect.h"
-#include "../../../../../../../../Program Files/Epic Games/UE_5.4/Engine/Plugins/FX/Niagara/Source/Niagara/Classes/NiagaraSystem.h"
+#include "NiagaraSystem.h"
 #include "Components/SphereComponent.h"
 #include "EquippableItem.generated.h"
-
-DECLARE_DELEGATE_OneParam(FOnExecutePrimaryAction, TObjectPtr<UAnimMontage>);
-DECLARE_DELEGATE_OneParam(FOnExecuteSecondaryAction, TObjectPtr<UAnimMontage>);
 
 UCLASS()
 class CRAFT_API AEquippableItem : public ABaseItem
@@ -22,17 +19,11 @@ public:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-	void Equip(class ACraftCharacter* Character);
-	void Unequip(class ACraftCharacter* Character);
-
-	UFUNCTION(BlueprintNativeEvent)
-	void ExecutePrimaryAction();
-
-	UFUNCTION(BlueprintNativeEvent)
-	void ExecuteSecondaryAction();
-
-	FOnExecutePrimaryAction OnExecutePrimaryAction;
-	FOnExecuteSecondaryAction OnExecuteSecondaryAction;
+	virtual bool TryEquip(class ACraftCharacter* Character) override;
+	virtual void Unequip(class ACraftCharacter* Character) override;
+	
+	virtual void ExecutePrimaryAction() override;
+	virtual void ExecuteSecondaryAction() override;
 
 protected:
 	// The owning character
@@ -43,7 +34,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
 	TObjectPtr<UStaticMeshComponent> StaticMesh;
 
-	// Gameplay effects to apply to valid object on hit
+	// Gameplay effects to apply to a valid object on hit
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
 	TArray<TSubclassOf<UGameplayEffect>> HitEffects;
 
@@ -80,6 +71,8 @@ protected:
 
 	UFUNCTION()
 	void OnBeginOverlap(AActor* OverlappedActor, AActor* OtherActor);
+	
+	void OnHit(AActor* OtherActor);
 
 	UFUNCTION()
 	void OnMontageNotifyBegin(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPointPayload);
