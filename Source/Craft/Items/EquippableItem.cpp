@@ -45,7 +45,7 @@ bool AEquippableItem::TryEquip(ACraftCharacter* CraftCharacter)
 		}
 	}
 
-	StaticMesh->AttachToComponent(CraftCharacter->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Socket_HandR"));
+	StaticMesh->AttachToComponent(CraftCharacter->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, MainHandSocketName);
 	Character = CraftCharacter;
 
 	USkeletalMeshComponent* Mesh = Character ? Character->GetMesh() : nullptr;
@@ -148,11 +148,11 @@ void AEquippableItem::OnHit(AActor* OtherActor)
 
 void AEquippableItem::OnMontageNotifyBegin(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPointPayload)
 {
-	if (NotifyName == "CollisionStart")
+	if (NotifyName == SwingStartNotify)
 	{
 		StaticMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	}
-	else if (NotifyName == "CollisionEnd")
+	else if (NotifyName == SwingEndNotify)
 	{
 		StaticMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}

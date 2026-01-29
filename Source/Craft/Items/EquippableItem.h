@@ -65,6 +65,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
 	TObjectPtr<UAnimMontage> SecondaryActionMontage;
 
+	const char* MainHandSocketName = "Socket_HandR";
+	const char* SwingStartNotify = "SwingStart";
+	const char* SwingEndNotify = "SwingEnd";
+
 	UFUNCTION()
 	void OnBeginOverlap(AActor* OverlappedActor, AActor* OtherActor);
 	
