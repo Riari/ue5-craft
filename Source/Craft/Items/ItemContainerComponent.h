@@ -20,8 +20,11 @@ struct FInventorySlot
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 Quantity = 0;
     
-	bool IsEmpty() const { return ItemDefinition == nullptr || Quantity <= 0; }
-    
+	bool IsEmpty() const
+	{
+		return ItemDefinition == nullptr || Quantity <= 0;
+	}
+
 	bool IsFull() const 
 	{ 
 		return ItemDefinition && Quantity == ItemDefinition->MaxStackSize;

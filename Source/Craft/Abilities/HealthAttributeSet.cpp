@@ -27,6 +27,16 @@ void UHealthAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCall
 	}
 }
 
+void UHealthAttributeSet::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(UHealthAttributeSet, Health);
+	DOREPLIFETIME(UHealthAttributeSet, MaxHealth);
+	DOREPLIFETIME(UHealthAttributeSet, HealthRegen);
+	DOREPLIFETIME(UHealthAttributeSet, Damage);
+}
+
 void UHealthAttributeSet::ClampAttributeOnChange(const FGameplayAttribute& Attribute, float& NewValue) const
 {
 	if (Attribute == GetHealthAttribute())
@@ -38,11 +48,4 @@ void UHealthAttributeSet::ClampAttributeOnChange(const FGameplayAttribute& Attri
 void UHealthAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UHealthAttributeSet, Health, OldHealth);
-}
-
-void UHealthAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	 
-	DOREPLIFETIME_CONDITION_NOTIFY(UHealthAttributeSet, Health, COND_None, REPNOTIFY_Always);
 }

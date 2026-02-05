@@ -2,11 +2,10 @@
 
 #include "CoreMinimal.h"
 #include "AbilitySystemInterface.h"
-#include "GameplayEffectTypes.h"
 #include "InputActionValue.h"
 #include "GameFramework/Character.h"
 #include "Interfaces/AnimNotifiable.h"
-#include "Items/EquippableItem.h"
+#include "Items/EquipmentComponent.h"
 #include "Items/ItemContainerComponent.h"
 #include "Logging/LogMacros.h"
 #include "CraftCharacter.generated.h"
@@ -78,46 +77,18 @@ class ACraftCharacter : public ACharacter, public IAnimNotifiable, public IAbili
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> SecondaryActionAction;
 
-protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = true))
-	TObjectPtr<class UAbilitySystemComponent> AbilitySystemComponent;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = true))
-	TObjectPtr<class UStaminaAttributeSet> StaminaAttributeSet;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = true))
-	TObjectPtr<class UHealthAttributeSet> HealthAttributeSet;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Abilities)
-	TArray<TSubclassOf<class UBaseGameplayAbility>> DefaultAbilities;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Abilities)
-	TArray<TSubclassOf<class UGameplayEffect>> DefaultEffects;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Inventory, meta = (AllowPrivateAccess = true))
-	TObjectPtr<class UItemContainerComponent> InventoryContainer;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Inventory, meta = (AllowPrivateAccess = true))
-	TObjectPtr<class UItemContainerComponent> HotbarContainer;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Equipment, meta = (AllowPrivateAccess = true))
-	TObjectPtr<class UEquipmentComponent> EquipmentComponent;
-
 public:
 	ACraftCharacter();
-
-	virtual void BeginPlay() override;
+	
+	virtual void PossessedBy(AController* NewController) override;
+	
+	virtual void OnRep_PlayerState() override;
 
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 	UEquipmentComponent* GetEquipmentComponent() const;
 
 	virtual void AnimNotify(FName NotifyName) override;
-
-	void OnStaminaAttributeChanged(const FOnAttributeChangeData& Data);
-	
-	UFUNCTION(BlueprintImplementableEvent)
-	void OnStaminaChanged(const float OldValue, const float NewValue, const float MaxValue);
 
 	bool TrySpawnItemToInventory(TSubclassOf<ABaseItem> ItemClass, int32 Quantity = 1);
 
@@ -127,9 +98,9 @@ public:
 	bool TryAddItemToInventory(ABaseItem* Item, int32 Quantity = 1);
 
 protected:
-	void InitializeAttributes();
-	void InitializeAbilities();
-	void InitializeEffects();
+	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
+	
+	void InitializeAbilitySystem();
 
 	void Move(const FInputActionValue& Value);
 

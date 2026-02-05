@@ -1,6 +1,7 @@
 #include "CraftCharacter.h"
 
 #include "AbilitySystemComponent.h"
+#include "CraftPlayerState.h"
 #include "Engine/LocalPlayer.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -10,24 +11,15 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "GameplayAbilitySpec.h"
-#include "GameplayAbilitySpecHandle.h"
 #include "InputActionValue.h"
 #include "Abilities/BaseGameplayAbility.h"
-#include "Abilities/HealthAttributeSet.h"
 #include "Abilities/InputID.h"
-#include "Abilities/StaminaAttributeSet.h"
-#include "Items/EquipmentComponent.h"
 #include "Items/ItemContainerComponent.h"
+#include "Net/UnrealNetwork.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
-//////////////////////////////////////////////////////////////////////////
-// ACraftCharacter
-
 ACraftCharacter::ACraftCharacter()
-	: AbilitySystemComponent{CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"))}
-	, StaminaAttributeSet{CreateDefaultSubobject<UStaminaAttributeSet>(TEXT("StaminaAttributeSet"))}
-	, HealthAttributeSet{CreateDefaultSubobject<UHealthAttributeSet>(TEXT("HealthAttributeSet"))}
 {
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 
@@ -58,59 +50,18 @@ ACraftCharacter::ACraftCharacter()
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
-
-	InventoryContainer = CreateDefaultSubobject<UItemContainerComponent>(TEXT("InventoryContainer"));
-	HotbarContainer = CreateDefaultSubobject<UItemContainerComponent>(TEXT("HotbarContainer"));
-
-	EquipmentComponent = CreateDefaultSubobject<UEquipmentComponent>(TEXT("EquipmentComponent"));
 }
 
-void ACraftCharacter::BeginPlay()
+void ACraftCharacter::PossessedBy(AController* NewController)
 {
-	Super::BeginPlay();
-
-	if (!AbilitySystemComponent) return;
-
-	AbilitySystemComponent->InitAbilityActorInfo(this, this);
-
-	InitializeAttributes();
-	InitializeAbilities();
-	InitializeEffects();
+	Super::PossessedBy(NewController);
+	InitializeAbilitySystem();
 }
 
-void ACraftCharacter::InitializeAttributes()
+void ACraftCharacter::OnRep_PlayerState()
 {
-	if (!AbilitySystemComponent) return;
-
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(StaminaAttributeSet->GetStaminaAttribute()).AddUObject(this, &ThisClass::OnStaminaAttributeChanged);
-}
-
-void ACraftCharacter::InitializeAbilities()
-{
-	if (!HasAuthority() || !AbilitySystemComponent) return;
-
-	for (TSubclassOf<UBaseGameplayAbility>& Ability : DefaultAbilities)
-	{
-		FGameplayAbilitySpec Spec(Ability, 1, static_cast<int32>(Ability.GetDefaultObject()->GetAbilityInputID()), this);
-		AbilitySystemComponent->GiveAbility(Spec);
-	}
-}
-
-void ACraftCharacter::InitializeEffects()
-{
-	if (!AbilitySystemComponent) return;
-
-	FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
-	EffectContext.AddSourceObject(this);
-
-	for (TSubclassOf<UGameplayEffect>& Effect : DefaultEffects)
-	{
-		FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(Effect, 1, EffectContext);
-		if (SpecHandle.IsValid())
-		{
-			AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-		}
-	}
+	Super::OnRep_PlayerState();
+	InitializeAbilitySystem();
 }
 
 UAbilitySystemComponent* ACraftCharacter::GetAbilitySystemComponent() const
@@ -120,16 +71,11 @@ UAbilitySystemComponent* ACraftCharacter::GetAbilitySystemComponent() const
 
 UEquipmentComponent* ACraftCharacter::GetEquipmentComponent() const
 {
-	return EquipmentComponent;
+	return GetPlayerState<ACraftPlayerState>()->GetEquipmentComponent();
 }
 
 void ACraftCharacter::AnimNotify(FName NotifyName)
 {
-}
-
-void ACraftCharacter::OnStaminaAttributeChanged(const FOnAttributeChangeData& Data)
-{
-	OnStaminaChanged(Data.OldValue, Data.NewValue, StaminaAttributeSet->GetMaxStamina());
 }
 
 bool ACraftCharacter::TrySpawnItemToInventory(TSubclassOf<ABaseItem> ItemClass, int32 Quantity)
@@ -146,6 +92,10 @@ void ACraftCharacter::OnItemPickUp(ABaseItem* Item)
 
 bool ACraftCharacter::TryAddItemToInventory(ABaseItem* Item, int32 Quantity)
 {
+	ACraftPlayerState* PS = GetPlayerState<ACraftPlayerState>();
+	if (!PS) return false;
+
+	UItemContainerComponent* HotbarContainer = PS->GetHotbarContainer();
 	int HotbarSlotIndex = HotbarContainer->FindFirstUsableSlotIndex(Item->GetDefinition(), Quantity);
 	if (HotbarSlotIndex != -1)
 	{
@@ -204,6 +154,17 @@ void ACraftCharacter::SendAbilityLocalInput(const FInputActionValue& Value, int3
 		: AbilitySystemComponent->AbilityLocalInputReleased(InputID);
 }
 
+void ACraftCharacter::InitializeAbilitySystem()
+{
+	ACraftPlayerState* PS = GetPlayerState<ACraftPlayerState>();
+	if (PS)
+	{
+		AbilitySystemComponent = Cast<UAbilitySystemComponent>(PS->GetAbilitySystemComponent());
+		AbilitySystemComponent->InitAbilityActorInfo(PS, this);
+		PS->InitializeAbilitySystem();
+	}
+}
+
 void ACraftCharacter::Move(const FInputActionValue& Value)
 {
 	FVector2D MovementVector = Value.Get<FVector2D>();
@@ -251,10 +212,16 @@ void ACraftCharacter::SecondaryAction(const FInputActionValue& Value)
 
 void ACraftCharacter::ActivateHotbar(int32 SlotIndex)
 {
+	ACraftPlayerState* PS = GetPlayerState<ACraftPlayerState>();
+	if (!PS) return;
+
+	UItemContainerComponent* HotbarContainer = PS->GetHotbarContainer();
 	FSlotActivationResult Result = HotbarContainer->TryActivateSlot(SlotIndex);
 
 	if (Result.Success)
 	{
+		UEquipmentComponent* EquipmentComponent = PS->GetEquipmentComponent();
+
 		EquipmentComponent->UnequipMainHandItem();
 
 		if (Result.ItemActor)

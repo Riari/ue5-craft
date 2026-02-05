@@ -13,29 +13,29 @@ class CRAFT_API UHealthAttributeSet : public UBaseAttributeSet
 public:
 	UHealthAttributeSet();
 
-	UPROPERTY(BlueprintReadOnly, Category = "Attributes", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Attributes", Meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData Health;
 	ATTRIBUTE_ACCESSORS(UHealthAttributeSet, Health);
 
-	UPROPERTY(BlueprintReadOnly, Category = "Attributes", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Attributes", Meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData MaxHealth;
 	ATTRIBUTE_ACCESSORS(UHealthAttributeSet, MaxHealth);
 
-	UPROPERTY(BlueprintReadOnly, Category = "Attributes", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Attributes", Meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData HealthRegen;
 	ATTRIBUTE_ACCESSORS(UHealthAttributeSet, HealthRegen);
 
-	UPROPERTY(BlueprintReadOnly, Category = "Attributes", Meta = (AllowPrivateAccess = true))
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Attributes", Meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData Damage;
 	ATTRIBUTE_ACCESSORS(UHealthAttributeSet, Damage)
 
 	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
+	
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
 	virtual void ClampAttributeOnChange(const FGameplayAttribute& Attribute, float& NewValue) const override;
 
 	UFUNCTION()
 	virtual void OnRep_Health(const FGameplayAttributeData& OldHealth);
-	 
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };
