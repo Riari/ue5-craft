@@ -10,7 +10,6 @@
 #include "GameFramework/Controller.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
-#include "GameplayAbilitySpec.h"
 #include "InputActionValue.h"
 #include "Abilities/BaseGameplayAbility.h"
 #include "Abilities/InputID.h"
