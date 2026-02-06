@@ -11,8 +11,8 @@ class CRAFT_API UEquipmentComponent : public UActorComponent
 
 public:
 	UEquipmentComponent();
-
-	virtual void BeginPlay() override;
+	
+	void Initialize();
 
 	bool TryEquipMainHandItem(class ABaseItem* Item);
 	void UnequipMainHandItem();

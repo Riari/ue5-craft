@@ -35,13 +35,16 @@ bool AEquippableItem::TryEquip(ACraftCharacter* CraftCharacter)
 	SetActorHiddenInGame(false);
 	StaticMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	if (UAbilitySystemComponent* ASC = CraftCharacter->GetAbilitySystemComponent())
+	if (HasAuthority())
 	{
-		for (TSubclassOf<UBaseGameplayAbility>& Ability : Abilities)
+		if (UAbilitySystemComponent* ASC = CraftCharacter->GetAbilitySystemComponent())
 		{
-			FGameplayAbilitySpec Spec(Ability, 1, static_cast<int32>(Ability.GetDefaultObject()->GetAbilityInputID()), this);
-			FGameplayAbilitySpecHandle AbilityHandle = ASC->GiveAbility(Spec);
-			GrantedAbilities.Add(AbilityHandle);
+			for (TSubclassOf<UBaseGameplayAbility>& Ability : Abilities)
+			{
+				FGameplayAbilitySpec Spec(Ability, 1, static_cast<int32>(Ability.GetDefaultObject()->GetAbilityInputID()), this);
+				FGameplayAbilitySpecHandle AbilityHandle = ASC->GiveAbility(Spec);
+				GrantedAbilities.Add(AbilityHandle);
+			}
 		}
 	}
 

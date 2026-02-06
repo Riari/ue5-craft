@@ -100,7 +100,7 @@ public:
 protected:
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
 	
-	void InitializeAbilitySystem();
+	void Initialize();
 
 	void Move(const FInputActionValue& Value);
 
@@ -111,6 +111,26 @@ protected:
 	void SecondaryAction(const FInputActionValue& Value);
 
 	void ActivateHotbar(int32 SlotIndex);
+	
+	UPROPERTY(ReplicatedUsing=OnRep_RemoteRotation)
+	FRotator ReplicatedRemoteRotation;
+	
+	UFUNCTION()
+	void OnRep_RemoteRotation();
+	
+	UFUNCTION(Server, Reliable)
+	void Server_SetActorRotation(FRotator NewRotation);
+	
+	UFUNCTION(Server, Reliable)
+	void RPC_Server_ActivateHotbar(int32 SlotIndex);
+	
+	void PlayMontage(TObjectPtr<UAnimMontage> Montage);
+	
+	UFUNCTION(Server, Reliable)
+	void RPC_Server_PlayMontage(UAnimMontage* Montage);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void RPC_Multicast_PlayMontage(UAnimMontage* Montage);
 
 	void OnExecutePrimaryAction(TObjectPtr<UAnimMontage> Montage);
 	void OnExecuteSecondaryAction(TObjectPtr<UAnimMontage> Montage);
@@ -118,6 +138,8 @@ protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	virtual void SendAbilityLocalInput(const FInputActionValue& Value, int32 InputID);
+	
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }

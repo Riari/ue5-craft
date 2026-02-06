@@ -21,7 +21,7 @@ public:
 
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	
-	void InitializeAbilitySystem();
+	void Initialize();
 
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -37,7 +37,6 @@ public:
 	
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAbilitySystemInitialized);
 
-	/** Fired on the owning client when the server has finished InitializeAbilitySystem() */
 	UPROPERTY(BlueprintAssignable, Category = "AbilitySystem")
 	FOnAbilitySystemInitialized OnAbilitySystemInitialized;
 
@@ -68,6 +67,8 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Equipment, meta = (AllowPrivateAccess = true))
 	TObjectPtr<class UEquipmentComponent> EquipmentComponent;
+	
+	void InitializeAbilitySystem();
 	
 	UFUNCTION(Client, Reliable)
 	void RPC_Client_OnStaminaChanged(float OldValue, float NewValue, float Max);

@@ -1,23 +1,24 @@
 #include "EquipmentComponent.h"
 
-#include "EquippableItem.h"
 #include "Craft/CraftCharacter.h"
+#include "Craft/CraftPlayerState.h"
 
 UEquipmentComponent::UEquipmentComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
-void UEquipmentComponent::BeginPlay()
+void UEquipmentComponent::Initialize()
 {
-	Super::BeginPlay();
-
-	Character = Cast<ACraftCharacter>(GetOwner());
+	ACraftPlayerState* PS = Cast<ACraftPlayerState>(GetOwner());
+	check(PS);
+	Character = Cast<ACraftCharacter>(PS->GetPawn());
+	check(Character);
 }
 
 bool UEquipmentComponent::TryEquipMainHandItem(ABaseItem* Item)
 {
-	ensureMsgf(IsValid(Item), TEXT("Item invalid. PendingKill=%d"), Item && Item->IsPendingKillPending());
+	check(Item);
 
 	if (Item->TryEquip(Character))
 	{

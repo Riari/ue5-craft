@@ -23,42 +23,10 @@ UAbilitySystemComponent* ACraftPlayerState::GetAbilitySystemComponent() const
 	return AbilitySystemComponent;
 }
 
-void ACraftPlayerState::InitializeAbilitySystem()
+void ACraftPlayerState::Initialize()
 {
-	if (!AbilitySystemComponent) return;
-
-	if (HasAuthority())
-	{
-		// Abilities
-		for (TSubclassOf<UBaseGameplayAbility>& Ability : DefaultAbilities)
-		{
-			FGameplayAbilitySpec Spec(Ability, 1, static_cast<int32>(Ability.GetDefaultObject()->GetAbilityInputID()), this);
-			AbilitySystemComponent->GiveAbility(Spec);
-		}
-
-		// Effects
-		FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
-		EffectContext.AddSourceObject(this);
-		
-		UE_LOG(LogTemp, Warning, TEXT("Applying %d default effects to %s"), DefaultEffects.Num(), *GetName());
-
-		for (TSubclassOf<UGameplayEffect>& Effect : DefaultEffects)
-		{
-			FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(Effect, 1, EffectContext);
-			if (SpecHandle.IsValid())
-			{
-				AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-				
-				UE_LOG(LogTemp, Warning, TEXT("Applied effect %s to %s"), *Effect->GetName(), *GetName());
-			}
-		}
-		
-		RPC_Client_OnAbilitySystemInitialized();
-	}
-
-	// Ability delegates
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(StaminaAttributeSet->GetStaminaAttribute()).AddUObject(this, &ThisClass::OnStaminaAttributeChanged);
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(HealthAttributeSet->GetHealthAttribute()).AddUObject(this, &ThisClass::OnHealthAttributeChanged);
+	InitializeAbilitySystem();
+	EquipmentComponent->Initialize();
 }
 
 void ACraftPlayerState::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
@@ -97,6 +65,44 @@ void ACraftPlayerState::RPC_Client_OnStaminaChanged_Implementation(float OldValu
 void ACraftPlayerState::RPC_Client_OnHealthChanged_Implementation(float OldValue, float NewValue, float Max)
 {
 	Client_OnHealthChanged.Broadcast(OldValue, NewValue, Max);
+}
+
+void ACraftPlayerState::InitializeAbilitySystem()
+{
+	if (!AbilitySystemComponent) return;
+
+	if (HasAuthority())
+	{
+		// Abilities
+		for (TSubclassOf<UBaseGameplayAbility>& Ability : DefaultAbilities)
+		{
+			FGameplayAbilitySpec Spec(Ability, 1, static_cast<int32>(Ability.GetDefaultObject()->GetAbilityInputID()), this);
+			AbilitySystemComponent->GiveAbility(Spec);
+		}
+
+		// Effects
+		FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
+		EffectContext.AddSourceObject(this);
+		
+		UE_LOG(LogTemp, Warning, TEXT("Applying %d default effects to %s"), DefaultEffects.Num(), *GetName());
+
+		for (TSubclassOf<UGameplayEffect>& Effect : DefaultEffects)
+		{
+			FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(Effect, 1, EffectContext);
+			if (SpecHandle.IsValid())
+			{
+				AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+				
+				UE_LOG(LogTemp, Warning, TEXT("Applied effect %s to %s"), *Effect->GetName(), *GetName());
+			}
+		}
+		
+		RPC_Client_OnAbilitySystemInitialized();
+	}
+
+	// Ability delegates
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(StaminaAttributeSet->GetStaminaAttribute()).AddUObject(this, &ThisClass::OnStaminaAttributeChanged);
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(HealthAttributeSet->GetHealthAttribute()).AddUObject(this, &ThisClass::OnHealthAttributeChanged);
 }
 
 void ACraftPlayerState::OnStaminaAttributeChanged(const FOnAttributeChangeData& Data)

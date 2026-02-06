@@ -26,17 +26,20 @@ ACraftCharacter::ACraftCharacter()
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
 
-	GetCharacterMovement()->bOrientRotationToMovement = true; // Character moves in the direction of input...	
-	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f); // ...at this rotation rate
-
-	// Note: For faster iteration times these variables, and many more, can be tweaked in the Character Blueprint
-	// instead of recompiling to adjust them
-	GetCharacterMovement()->JumpZVelocity = 700.f;
-	GetCharacterMovement()->AirControl = 0.35f;
-	GetCharacterMovement()->MaxWalkSpeed = 500.f;
-	GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
-	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
-	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
+	if (GetCharacterMovement())
+	{
+		GetCharacterMovement()->bOrientRotationToMovement = false;
+		GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
+		GetCharacterMovement()->JumpZVelocity = 700.f;
+		GetCharacterMovement()->AirControl = 0.35f;
+		GetCharacterMovement()->MaxWalkSpeed = 500.f;
+		GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
+		GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
+		GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
+	}
+	
+	bReplicates = true;
+	SetReplicateMovement(true);
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
@@ -54,13 +57,13 @@ ACraftCharacter::ACraftCharacter()
 void ACraftCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
-	InitializeAbilitySystem();
+	Initialize();
 }
 
 void ACraftCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
-	InitializeAbilitySystem();
+	Initialize();
 }
 
 UAbilitySystemComponent* ACraftCharacter::GetAbilitySystemComponent() const
@@ -153,14 +156,21 @@ void ACraftCharacter::SendAbilityLocalInput(const FInputActionValue& Value, int3
 		: AbilitySystemComponent->AbilityLocalInputReleased(InputID);
 }
 
-void ACraftCharacter::InitializeAbilitySystem()
+void ACraftCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	
+	DOREPLIFETIME(ACraftCharacter, ReplicatedRemoteRotation);
+}
+
+void ACraftCharacter::Initialize()
 {
 	ACraftPlayerState* PS = GetPlayerState<ACraftPlayerState>();
 	if (PS)
 	{
 		AbilitySystemComponent = Cast<UAbilitySystemComponent>(PS->GetAbilitySystemComponent());
 		AbilitySystemComponent->InitAbilityActorInfo(PS, this);
-		PS->InitializeAbilitySystem();
+		PS->Initialize();
 	}
 }
 
@@ -183,7 +193,12 @@ void ACraftCharacter::Move(const FInputActionValue& Value)
 		{
 			FRotator NewRotation = GetActorRotation();
 			NewRotation.Yaw = Rotation.Yaw;
-			SetActorRotation(NewRotation);
+
+			if (IsLocallyControlled())
+			{
+				SetActorRotation(NewRotation);
+				Server_SetActorRotation(NewRotation);
+			}
 		}
 	}
 }
@@ -211,8 +226,11 @@ void ACraftCharacter::SecondaryAction(const FInputActionValue& Value)
 
 void ACraftCharacter::ActivateHotbar(int32 SlotIndex)
 {
+	if (!HasAuthority())
+		RPC_Server_ActivateHotbar(SlotIndex);
+	
 	ACraftPlayerState* PS = GetPlayerState<ACraftPlayerState>();
-	if (!PS) return;
+	check(PS);
 
 	UItemContainerComponent* HotbarContainer = PS->GetHotbarContainer();
 	FSlotActivationResult Result = HotbarContainer->TryActivateSlot(SlotIndex);
@@ -233,13 +251,62 @@ void ACraftCharacter::ActivateHotbar(int32 SlotIndex)
 	}
 }
 
+void ACraftCharacter::OnRep_RemoteRotation()
+{
+	if (!IsLocallyControlled())
+	{
+		SetActorRotation(ReplicatedRemoteRotation);
+	}
+}
+
+void ACraftCharacter::Server_SetActorRotation_Implementation(FRotator NewRotation)
+{
+	SetActorRotation(NewRotation);
+	ReplicatedRemoteRotation = NewRotation;
+	ForceNetUpdate();
+}
+
+void ACraftCharacter::PlayMontage(TObjectPtr<UAnimMontage> Montage)
+{
+	if (Montage == nullptr) return;
+
+	if (!HasAuthority())
+	{
+		RPC_Server_PlayMontage(Montage.Get());
+	}
+	else
+	{
+		RPC_Multicast_PlayMontage(Montage.Get());
+	}
+}
+
+void ACraftCharacter::RPC_Server_PlayMontage_Implementation(UAnimMontage* Montage)
+{
+	RPC_Multicast_PlayMontage(Montage);
+}
+
+void ACraftCharacter::RPC_Multicast_PlayMontage_Implementation(UAnimMontage* Montage)
+{
+	if (Montage == nullptr) return;
+
+	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	{
+		AnimInstance->Montage_Play(Montage);
+	}
+}
+
+void ACraftCharacter::RPC_Server_ActivateHotbar_Implementation(int32 SlotIndex)
+{
+	ActivateHotbar(SlotIndex);
+}
+
 void ACraftCharacter::OnExecutePrimaryAction(TObjectPtr<UAnimMontage> Montage)
 {
-	GetMesh()->GetAnimInstance()->Montage_Play(Montage);
+	PlayMontage(Montage);
 }
 
 void ACraftCharacter::OnExecuteSecondaryAction(TObjectPtr<UAnimMontage> Montage)
 {
-	GetMesh()->GetAnimInstance()->Montage_Play(Montage);
+	PlayMontage(Montage);
 }
 
