@@ -30,10 +30,10 @@ public:
 	UEquipmentComponent* GetEquipmentComponent() const;
 
 	UPROPERTY(BlueprintAssignable)
-	FOnAttributeChanged Client_OnStaminaChanged;
+	FOnAttributeChanged OnClientStaminaChanged;
 
 	UPROPERTY(BlueprintAssignable)
-	FOnAttributeChanged Client_OnHealthChanged;
+	FOnAttributeChanged OnClientHealthChanged;
 	
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAbilitySystemInitialized);
 
@@ -41,7 +41,7 @@ public:
 	FOnAbilitySystemInitialized OnAbilitySystemInitialized;
 
 	UFUNCTION(Client, Reliable)
-	void RPC_Client_OnAbilitySystemInitialized();
+	void Client_OnAbilitySystemInitialized();
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = true))
@@ -71,10 +71,10 @@ protected:
 	void InitializeAbilitySystem();
 	
 	UFUNCTION(Client, Reliable)
-	void RPC_Client_OnStaminaChanged(float OldValue, float NewValue, float Max);
+	void Client_OnStaminaChanged(float OldValue, float NewValue, float Max);
 
 	UFUNCTION(Client, Reliable)
-	void RPC_Client_OnHealthChanged(float OldValue, float NewValue, float Max);
+	void Client_OnHealthChanged(float OldValue, float NewValue, float Max);
 
 	void OnStaminaAttributeChanged(const FOnAttributeChangeData& Data);
 	void OnHealthAttributeChanged(const FOnAttributeChangeData& Data);

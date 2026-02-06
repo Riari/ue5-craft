@@ -14,6 +14,7 @@
 #include "Abilities/BaseGameplayAbility.h"
 #include "Abilities/InputID.h"
 #include "Items/ItemContainerComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
@@ -89,6 +90,18 @@ bool ACraftCharacter::TrySpawnItemToInventory(TSubclassOf<ABaseItem> ItemClass, 
 void ACraftCharacter::OnItemPickUp(ABaseItem* Item)
 {
 	Item->SetActorHiddenInGame(true);
+	TryAddItemToInventory(Item);
+	Client_OnItemPickUp(Item);
+}
+
+void ACraftCharacter::Client_OnItemPickUp_Implementation(ABaseItem* Item)
+{
+	UGameplayStatics::PlaySoundAtLocation(
+		GetWorld(),
+		ItemPickUpSound,
+		GetActorLocation()
+	);
+
 	TryAddItemToInventory(Item);
 }
 
@@ -227,7 +240,7 @@ void ACraftCharacter::SecondaryAction(const FInputActionValue& Value)
 void ACraftCharacter::ActivateHotbar(int32 SlotIndex)
 {
 	if (!HasAuthority())
-		RPC_Server_ActivateHotbar(SlotIndex);
+		Server_ActivateHotbar(SlotIndex);
 	
 	ACraftPlayerState* PS = GetPlayerState<ACraftPlayerState>();
 	check(PS);
@@ -272,20 +285,30 @@ void ACraftCharacter::PlayMontage(TObjectPtr<UAnimMontage> Montage)
 
 	if (!HasAuthority())
 	{
-		RPC_Server_PlayMontage(Montage.Get());
+		Server_PlayMontage(Montage.Get());
 	}
 	else
 	{
-		RPC_Multicast_PlayMontage(Montage.Get());
+		Multicast_PlayMontage(Montage.Get());
 	}
 }
 
-void ACraftCharacter::RPC_Server_PlayMontage_Implementation(UAnimMontage* Montage)
+void ACraftCharacter::Server_PlayMontage_Implementation(UAnimMontage* Montage)
 {
-	RPC_Multicast_PlayMontage(Montage);
+	if (Montage == nullptr) return;
+
+	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	{
+		float Duration = AnimInstance->Montage_Play(Montage);
+		if (Duration <= 0.f)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("PlayMontage: Montage '%s' has no duration!"), *Montage->GetName());
+		}
+	}
+	Multicast_PlayMontage(Montage);
 }
 
-void ACraftCharacter::RPC_Multicast_PlayMontage_Implementation(UAnimMontage* Montage)
+void ACraftCharacter::Multicast_PlayMontage_Implementation(UAnimMontage* Montage)
 {
 	if (Montage == nullptr) return;
 
@@ -295,7 +318,7 @@ void ACraftCharacter::RPC_Multicast_PlayMontage_Implementation(UAnimMontage* Mon
 	}
 }
 
-void ACraftCharacter::RPC_Server_ActivateHotbar_Implementation(int32 SlotIndex)
+void ACraftCharacter::Server_ActivateHotbar_Implementation(int32 SlotIndex)
 {
 	ActivateHotbar(SlotIndex);
 }

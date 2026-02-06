@@ -5,7 +5,6 @@
 #include "GameplayAbilitySpecHandle.h"
 #include "GameplayEffect.h"
 #include "NiagaraSystem.h"
-#include "Components/SphereComponent.h"
 #include "EquippableItem.generated.h"
 
 UCLASS()
@@ -18,6 +17,12 @@ public:
 
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	
+	UFUNCTION(Server, Reliable)
+	void Server_TryEquip(ACraftCharacter* CraftCharacter);
+	
+	UFUNCTION(Server, Reliable)
+	void Server_Unequip(ACraftCharacter* CraftCharacter);
 
 	virtual bool TryEquip(class ACraftCharacter* Character) override;
 	virtual void Unequip(class ACraftCharacter* Character) override;
@@ -70,10 +75,13 @@ protected:
 	const char* SwingEndNotify = "SwingEnd";
 
 	UFUNCTION()
-	void OnBeginOverlap(AActor* OverlappedActor, AActor* OtherActor);
+	void OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	
 	void OnHit(AActor* OtherActor);
 
 	UFUNCTION()
 	void OnMontageNotifyBegin(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPointPayload);
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multicast_PlayHitEffects(const FVector& Location, const FRotator& Rotation);
 };

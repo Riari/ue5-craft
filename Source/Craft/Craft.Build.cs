@@ -8,8 +8,23 @@ public class Craft : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput" });
+		PublicDependencyModuleNames.AddRange(new string[]
+		{
+			"Core",
+			"CoreUObject",
+			"Engine",
+			"InputCore",
+			"EnhancedInput"
+		});
         
-        PrivateDependencyModuleNames.AddRange(new string[] { "GameplayAbilities", "GameplayTags", "GameplayTasks", "Niagara" });
+        PrivateDependencyModuleNames.AddRange(new string[] 
+		{
+			"GameplayAbilities",
+			"GameplayTags",
+			"GameplayTasks",
+			"Niagara",
+			"LevelSequence",
+			"MovieScene"
+		});
 	}
 }

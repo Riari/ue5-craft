@@ -52,19 +52,19 @@ UEquipmentComponent* ACraftPlayerState::GetEquipmentComponent() const
 	return EquipmentComponent;
 }
 
-void ACraftPlayerState::RPC_Client_OnAbilitySystemInitialized_Implementation()
+void ACraftPlayerState::Client_OnAbilitySystemInitialized_Implementation()
 {
 	OnAbilitySystemInitialized.Broadcast();
 }
 
-void ACraftPlayerState::RPC_Client_OnStaminaChanged_Implementation(float OldValue, float NewValue, float Max)
+void ACraftPlayerState::Client_OnStaminaChanged_Implementation(float OldValue, float NewValue, float Max)
 {
-	Client_OnStaminaChanged.Broadcast(OldValue, NewValue, Max);
+	OnClientStaminaChanged.Broadcast(OldValue, NewValue, Max);
 }
 
-void ACraftPlayerState::RPC_Client_OnHealthChanged_Implementation(float OldValue, float NewValue, float Max)
+void ACraftPlayerState::Client_OnHealthChanged_Implementation(float OldValue, float NewValue, float Max)
 {
-	Client_OnHealthChanged.Broadcast(OldValue, NewValue, Max);
+	OnClientHealthChanged.Broadcast(OldValue, NewValue, Max);
 }
 
 void ACraftPlayerState::InitializeAbilitySystem()
@@ -97,7 +97,7 @@ void ACraftPlayerState::InitializeAbilitySystem()
 			}
 		}
 		
-		RPC_Client_OnAbilitySystemInitialized();
+		Client_OnAbilitySystemInitialized();
 	}
 
 	// Ability delegates
@@ -107,10 +107,10 @@ void ACraftPlayerState::InitializeAbilitySystem()
 
 void ACraftPlayerState::OnStaminaAttributeChanged(const FOnAttributeChangeData& Data)
 {
-	RPC_Client_OnStaminaChanged(Data.OldValue, Data.NewValue, StaminaAttributeSet->GetMaxStamina());
+	Client_OnStaminaChanged(Data.OldValue, Data.NewValue, StaminaAttributeSet->GetMaxStamina());
 }
 
 void ACraftPlayerState::OnHealthAttributeChanged(const FOnAttributeChangeData& Data)
 {
-	RPC_Client_OnHealthChanged(Data.OldValue, Data.NewValue, HealthAttributeSet->GetMaxHealth());
+	Client_OnHealthChanged(Data.OldValue, Data.NewValue, HealthAttributeSet->GetMaxHealth());
 }

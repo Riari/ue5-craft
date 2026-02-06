@@ -13,14 +13,22 @@ AEquippableItem::AEquippableItem()
 	StaticMesh->CanCharacterStepUpOn = ECB_No;
 	StaticMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	StaticMesh->SetCollisionResponseToAllChannels(ECR_Overlap);
+	StaticMesh->SetGenerateOverlapEvents(true);
+	StaticMesh->SetIsReplicated(true);
 	SetRootComponent(StaticMesh);
+
+	bReplicates = true;
+	SetReplicateMovement(true);
 }
 
 void AEquippableItem::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	OnActorBeginOverlap.AddDynamic(this, &AEquippableItem::OnBeginOverlap);
+
+	if (HasAuthority())
+	{
+		StaticMesh->OnComponentBeginOverlap.AddDynamic(this, &AEquippableItem::OnComponentBeginOverlap);
+	}
 }
 
 void AEquippableItem::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -30,21 +38,36 @@ void AEquippableItem::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	OnActorEndOverlap.RemoveAll(this);
 }
 
+void AEquippableItem::Server_TryEquip_Implementation(ACraftCharacter* CraftCharacter)
+{
+	TryEquip(CraftCharacter);
+}
+
+void AEquippableItem::Server_Unequip_Implementation(ACraftCharacter* CraftCharacter)
+{
+	Unequip(CraftCharacter);
+}
+
 bool AEquippableItem::TryEquip(ACraftCharacter* CraftCharacter)
 {
+	check(CraftCharacter);
+
 	SetActorHiddenInGame(false);
 	StaticMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	if (HasAuthority())
+	if (!HasAuthority())
 	{
-		if (UAbilitySystemComponent* ASC = CraftCharacter->GetAbilitySystemComponent())
+		Server_TryEquip(CraftCharacter);
+		return true;
+	}
+
+	if (UAbilitySystemComponent* ASC = CraftCharacter->GetAbilitySystemComponent())
+	{
+		for (TSubclassOf<UBaseGameplayAbility>& Ability : Abilities)
 		{
-			for (TSubclassOf<UBaseGameplayAbility>& Ability : Abilities)
-			{
-				FGameplayAbilitySpec Spec(Ability, 1, static_cast<int32>(Ability.GetDefaultObject()->GetAbilityInputID()), this);
-				FGameplayAbilitySpecHandle AbilityHandle = ASC->GiveAbility(Spec);
-				GrantedAbilities.Add(AbilityHandle);
-			}
+			FGameplayAbilitySpec Spec(Ability, 1, static_cast<int32>(Ability.GetDefaultObject()->GetAbilityInputID()), this);
+			FGameplayAbilitySpecHandle AbilityHandle = ASC->GiveAbility(Spec);
+			GrantedAbilities.Add(AbilityHandle);
 		}
 	}
 
@@ -53,17 +76,26 @@ bool AEquippableItem::TryEquip(ACraftCharacter* CraftCharacter)
 
 	USkeletalMeshComponent* Mesh = Character ? Character->GetMesh() : nullptr;
 	UAnimInstance* AnimInstance = Mesh ? Mesh->GetAnimInstance() : nullptr;
-	
+
 	ensureMsgf(AnimInstance, TEXT("Character %s does not have an AnimInstance"), *GetNameSafe(Character));
-	
-	AnimInstance->OnPlayMontageNotifyBegin.AddDynamic(this, &AEquippableItem::OnMontageNotifyBegin);
-	
+
+	if (AnimInstance)
+	{
+		AnimInstance->OnPlayMontageNotifyBegin.AddDynamic(this, &AEquippableItem::OnMontageNotifyBegin);
+	}
+
 	return true;
 }
 
 void AEquippableItem::Unequip(ACraftCharacter* CraftCharacter)
 {
 	SetActorHiddenInGame(true);
+
+	if (!HasAuthority())
+	{
+		Server_Unequip(CraftCharacter);
+		return;
+	}
 
 	if (UAbilitySystemComponent* ASC = CraftCharacter->GetAbilitySystemComponent())
 	{
@@ -79,7 +111,8 @@ void AEquippableItem::Unequip(ACraftCharacter* CraftCharacter)
 	Character = nullptr;
 }
 
-void AEquippableItem::OnBeginOverlap(AActor* OverlappedActor, AActor* OtherActor)
+void AEquippableItem::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if (OtherActor->Implements<UHittable>())
 	{
@@ -101,33 +134,19 @@ void AEquippableItem::OnHit(AActor* OtherActor)
 			
 	IHittable::Execute_OnHit(OtherActor);
 
-	if (HitSound)
+	FVector HitLocation = StaticMesh->GetComponentLocation();
+	FRotator HitRotation = Character ? Character->GetActorRotation() : FRotator::ZeroRotator;
+	if (HitParticles || HitSound)
 	{
-		UGameplayStatics::PlaySoundAtLocation(
-			GetWorld(),
-			HitSound,
-			StaticMesh->GetComponentLocation()
-		);
+		Multicast_PlayHitEffects(HitLocation, HitRotation);
 	}
 
-	if (HitParticles)
+	if (HitCameraShakeClass && Character)
 	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-			GetWorld(),
-			HitParticles,
-			StaticMesh->GetComponentLocation(),
-			Character->GetActorRotation()
-		);
-	}
-
-	if (HitCameraShakeClass)
-	{
-		Character->GetLocalViewingPlayerController()->ClientStartCameraShake(
-			HitCameraShakeClass,
-			1.0f,
-			ECameraShakePlaySpace::CameraLocal,
-			FRotator::ZeroRotator
-		);
+		if (APlayerController* PC = Cast<APlayerController>(Character->GetController()))
+		{
+			PC->ClientStartCameraShake(HitCameraShakeClass, 1.0f);
+		}
 	}
 
 	if (OtherActor->Implements<UAbilitySystemInterface>())
@@ -139,7 +158,7 @@ void AEquippableItem::OnHit(AActor* OtherActor)
 			{
 				FGameplayEffectContextHandle EffectContext = OtherASC->MakeEffectContext();
 				FGameplayEffectSpecHandle SpecHandle = OtherASC->MakeOutgoingSpec(HitEffectClass, 1.0f, EffectContext);
-	 
+
 				if (SpecHandle.IsValid())
 				{
 					OtherASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
@@ -158,6 +177,19 @@ void AEquippableItem::OnMontageNotifyBegin(FName NotifyName, const FBranchingPoi
 	else if (NotifyName == SwingEndNotify)
 	{
 		StaticMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+}
+
+void AEquippableItem::Multicast_PlayHitEffects_Implementation(const FVector& Location, const FRotator& Rotation)
+{
+	if (HitSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), HitSound, Location);
+	}
+
+	if (HitParticles)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), HitParticles, Location, Rotation);
 	}
 }
 

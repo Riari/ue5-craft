@@ -77,6 +77,9 @@ class ACraftCharacter : public ACharacter, public IAnimNotifiable, public IAbili
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> SecondaryActionAction;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Items, meta = (AllowPrivateAccess = true))
+	TObjectPtr<class USoundBase> ItemPickUpSound;
+
 public:
 	ACraftCharacter();
 	
@@ -94,6 +97,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void OnItemPickUp(ABaseItem* Item);
+	
+	UFUNCTION(Client, Reliable)
+	void Client_OnItemPickUp(ABaseItem* Item);
 
 	bool TryAddItemToInventory(ABaseItem* Item, int32 Quantity = 1);
 
@@ -122,15 +128,15 @@ protected:
 	void Server_SetActorRotation(FRotator NewRotation);
 	
 	UFUNCTION(Server, Reliable)
-	void RPC_Server_ActivateHotbar(int32 SlotIndex);
+	void Server_ActivateHotbar(int32 SlotIndex);
 	
 	void PlayMontage(TObjectPtr<UAnimMontage> Montage);
 	
 	UFUNCTION(Server, Reliable)
-	void RPC_Server_PlayMontage(UAnimMontage* Montage);
+	void Server_PlayMontage(UAnimMontage* Montage);
 
 	UFUNCTION(NetMulticast, Reliable)
-	void RPC_Multicast_PlayMontage(UAnimMontage* Montage);
+	void Multicast_PlayMontage(UAnimMontage* Montage);
 
 	void OnExecutePrimaryAction(TObjectPtr<UAnimMontage> Montage);
 	void OnExecuteSecondaryAction(TObjectPtr<UAnimMontage> Montage);

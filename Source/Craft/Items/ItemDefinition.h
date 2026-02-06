@@ -31,5 +31,5 @@ public:
 	FGameplayTagContainer Tags;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
-	TSubclassOf<class AActor> ActorClass;
+	TSubclassOf<class ABaseItem> ActorClass;
 };
