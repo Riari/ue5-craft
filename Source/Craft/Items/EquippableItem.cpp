@@ -52,13 +52,26 @@ bool AEquippableItem::TryEquip(ACraftCharacter* CraftCharacter)
 {
 	check(CraftCharacter);
 
+	Character = CraftCharacter;
+
 	SetActorHiddenInGame(false);
 	StaticMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	StaticMesh->AttachToComponent(CraftCharacter->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, MainHandSocketName);
 
 	if (!HasAuthority())
 	{
 		Server_TryEquip(CraftCharacter);
 		return true;
+	}
+
+	USkeletalMeshComponent* Mesh = Character->GetMesh();
+	UAnimInstance* AnimInstance = Mesh ? Mesh->GetAnimInstance() : nullptr;
+
+	ensureMsgf(AnimInstance, TEXT("Character %s does not have an AnimInstance"), *GetNameSafe(Character));
+
+	if (AnimInstance)
+	{
+		AnimInstance->OnPlayMontageNotifyBegin.AddDynamic(this, &AEquippableItem::OnMontageNotifyBegin);
 	}
 
 	if (UAbilitySystemComponent* ASC = CraftCharacter->GetAbilitySystemComponent())
@@ -69,19 +82,6 @@ bool AEquippableItem::TryEquip(ACraftCharacter* CraftCharacter)
 			FGameplayAbilitySpecHandle AbilityHandle = ASC->GiveAbility(Spec);
 			GrantedAbilities.Add(AbilityHandle);
 		}
-	}
-
-	StaticMesh->AttachToComponent(CraftCharacter->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, MainHandSocketName);
-	Character = CraftCharacter;
-
-	USkeletalMeshComponent* Mesh = Character ? Character->GetMesh() : nullptr;
-	UAnimInstance* AnimInstance = Mesh ? Mesh->GetAnimInstance() : nullptr;
-
-	ensureMsgf(AnimInstance, TEXT("Character %s does not have an AnimInstance"), *GetNameSafe(Character));
-
-	if (AnimInstance)
-	{
-		AnimInstance->OnPlayMontageNotifyBegin.AddDynamic(this, &AEquippableItem::OnMontageNotifyBegin);
 	}
 
 	return true;

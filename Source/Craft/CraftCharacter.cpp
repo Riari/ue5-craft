@@ -89,6 +89,7 @@ bool ACraftCharacter::TrySpawnItemToInventory(TSubclassOf<ABaseItem> ItemClass, 
 
 void ACraftCharacter::OnItemPickUp(ABaseItem* Item)
 {
+	Item->SetOwner(this);
 	Item->SetActorHiddenInGame(true);
 	TryAddItemToInventory(Item);
 	Client_OnItemPickUp(Item);
@@ -280,35 +281,6 @@ void ACraftCharacter::Server_SetActorRotation_Implementation(FRotator NewRotatio
 }
 
 void ACraftCharacter::PlayMontage(TObjectPtr<UAnimMontage> Montage)
-{
-	if (Montage == nullptr) return;
-
-	if (!HasAuthority())
-	{
-		Server_PlayMontage(Montage.Get());
-	}
-	else
-	{
-		Multicast_PlayMontage(Montage.Get());
-	}
-}
-
-void ACraftCharacter::Server_PlayMontage_Implementation(UAnimMontage* Montage)
-{
-	if (Montage == nullptr) return;
-
-	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
-	{
-		float Duration = AnimInstance->Montage_Play(Montage);
-		if (Duration <= 0.f)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("PlayMontage: Montage '%s' has no duration!"), *Montage->GetName());
-		}
-	}
-	Multicast_PlayMontage(Montage);
-}
-
-void ACraftCharacter::Multicast_PlayMontage_Implementation(UAnimMontage* Montage)
 {
 	if (Montage == nullptr) return;
 
