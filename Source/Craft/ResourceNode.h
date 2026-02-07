@@ -34,4 +34,7 @@ protected:
 	void InitializeAttributes();
 
 	void OnHealthAttributeChanged(const FOnAttributeChangeData& Data);
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_OnDestroy();
 };

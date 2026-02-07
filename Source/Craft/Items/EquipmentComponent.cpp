@@ -8,34 +8,41 @@ UEquipmentComponent::UEquipmentComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
-void UEquipmentComponent::Initialize()
-{
-	ACraftPlayerState* PS = Cast<ACraftPlayerState>(GetOwner());
-	check(PS);
-	Character = Cast<ACraftCharacter>(PS->GetPawn());
-	check(Character);
-}
-
 bool UEquipmentComponent::TryEquipMainHandItem(ABaseItem* Item)
 {
 	check(Item);
 
-	if (Item->TryEquip(Character))
-	{
-		MainHandItem = Item;
-		return true;
-	}
-	
-	return false;
+	Equip(Item);
+	MainHandItem = Item;
+	return true;
 }
 
 void UEquipmentComponent::UnequipMainHandItem()
 {
 	if (MainHandItem)
 	{
-		MainHandItem->Unequip(Character);
+		Unequip(MainHandItem);
 		MainHandItem = nullptr;
 	}
+}
+
+void UEquipmentComponent::Server_TryEquip_Implementation(ABaseItem* Item)
+{
+}
+
+void UEquipmentComponent::Server_Unequip_Implementation(ABaseItem* Item)
+{
+}
+
+void UEquipmentComponent::Equip(ABaseItem* Item)
+{
+	Item->OnEquip(GetCharacter());
+}
+
+void UEquipmentComponent::Unequip(ABaseItem* Item)
+{
+
+	Item->OnUnequip(GetCharacter());
 }
 
 void UEquipmentComponent::ExecutePrimaryAction()
@@ -46,4 +53,14 @@ void UEquipmentComponent::ExecutePrimaryAction()
 void UEquipmentComponent::ExecuteSecondaryAction()
 {
 	MainHandItem->ExecuteSecondaryAction();
+}
+
+ACraftCharacter* UEquipmentComponent::GetCharacter() const
+{
+	// TODO: Cache this during initialisation (note - BeginPlay seems to be too early)
+	ACraftPlayerState* PS = Cast<ACraftPlayerState>(GetOwner());
+	check(PS);
+	ACraftCharacter* Character = Cast<ACraftCharacter>(PS->GetPawn());
+	check(Character);
+	return Character;
 }

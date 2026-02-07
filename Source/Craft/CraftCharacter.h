@@ -131,6 +131,9 @@ protected:
 	void Server_ActivateHotbar(int32 SlotIndex);
 	
 	void PlayMontage(TObjectPtr<UAnimMontage> Montage);
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_PlayMontage(UAnimMontage* Montage);
 
 	void OnExecutePrimaryAction(TObjectPtr<UAnimMontage> Montage);
 	void OnExecuteSecondaryAction(TObjectPtr<UAnimMontage> Montage);

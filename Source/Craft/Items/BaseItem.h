@@ -19,8 +19,8 @@ public:
 	void SetDefinition(UItemDefinition* ItemDefinition);
 	UItemDefinition* GetDefinition() const;
 	
-	virtual bool TryEquip(class ACraftCharacter* Character);
-	virtual void Unequip(class ACraftCharacter* Character);
+	virtual void OnEquip(class ACraftCharacter* Character);
+	virtual void OnUnequip(class ACraftCharacter* Character);
 
 	virtual void ExecutePrimaryAction();
 	virtual void ExecuteSecondaryAction();

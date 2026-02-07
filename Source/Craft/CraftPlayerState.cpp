@@ -26,7 +26,6 @@ UAbilitySystemComponent* ACraftPlayerState::GetAbilitySystemComponent() const
 void ACraftPlayerState::Initialize()
 {
 	InitializeAbilitySystem();
-	EquipmentComponent->Initialize();
 }
 
 void ACraftPlayerState::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const

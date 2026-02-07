@@ -16,12 +16,12 @@ UItemDefinition* ABaseItem::GetDefinition() const
 	return Definition;
 }
 
-bool ABaseItem::TryEquip(class ACraftCharacter* Character)
+void ABaseItem::OnEquip(ACraftCharacter* Character)
 {
-	return false;
+	// no-op
 }
 
-void ABaseItem::Unequip(class ACraftCharacter* Character)
+void ABaseItem::OnUnequip(ACraftCharacter* Character)
 {
 	// no-op
 }

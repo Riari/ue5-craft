@@ -11,11 +11,18 @@ class CRAFT_API UEquipmentComponent : public UActorComponent
 
 public:
 	UEquipmentComponent();
-	
-	void Initialize();
 
 	bool TryEquipMainHandItem(class ABaseItem* Item);
 	void UnequipMainHandItem();
+	
+	UFUNCTION(Server, Reliable)
+	void Server_TryEquip(ABaseItem* Item);
+	
+	UFUNCTION(Server, Reliable)
+	void Server_Unequip(ABaseItem* Item);
+
+	virtual void Equip(ABaseItem* Item);
+	virtual void Unequip(ABaseItem* Item);
 
 	UFUNCTION(BlueprintCallable, Category = "Abilities")
 	void ExecutePrimaryAction();
@@ -24,12 +31,11 @@ public:
 	void ExecuteSecondaryAction();
 
 protected:
-	TObjectPtr<class ACraftCharacter> Character;
-
 	UPROPERTY(Transient)
 	TObjectPtr<class ABaseItem> MainHandItem;
 
 	UPROPERTY(Transient)
 	TObjectPtr<class ABaseItem> OffHandItem;
-		
+	
+	class ACraftCharacter* GetCharacter() const;
 };

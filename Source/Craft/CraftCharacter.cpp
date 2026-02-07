@@ -11,7 +11,6 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
-#include "Abilities/BaseGameplayAbility.h"
 #include "Abilities/InputID.h"
 #include "Items/ItemContainerComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -282,7 +281,12 @@ void ACraftCharacter::Server_SetActorRotation_Implementation(FRotator NewRotatio
 
 void ACraftCharacter::PlayMontage(TObjectPtr<UAnimMontage> Montage)
 {
-	if (Montage == nullptr) return;
+	Multicast_PlayMontage(Montage);
+}
+
+void ACraftCharacter::Multicast_PlayMontage_Implementation(UAnimMontage* Montage)
+{
+	check(Montage);
 
 	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 	{

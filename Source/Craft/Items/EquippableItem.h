@@ -5,6 +5,7 @@
 #include "GameplayAbilitySpecHandle.h"
 #include "GameplayEffect.h"
 #include "NiagaraSystem.h"
+#include "Craft/CraftCharacter.h"
 #include "EquippableItem.generated.h"
 
 UCLASS()
@@ -17,24 +18,14 @@ public:
 
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-	
-	UFUNCTION(Server, Reliable)
-	void Server_TryEquip(ACraftCharacter* CraftCharacter);
-	
-	UFUNCTION(Server, Reliable)
-	void Server_Unequip(ACraftCharacter* CraftCharacter);
 
-	virtual bool TryEquip(class ACraftCharacter* Character) override;
-	virtual void Unequip(class ACraftCharacter* Character) override;
+	virtual void OnEquip(ACraftCharacter* Character) override;
+	virtual void OnUnequip(ACraftCharacter* Character) override;
 	
 	virtual void ExecutePrimaryAction() override;
 	virtual void ExecuteSecondaryAction() override;
 
 protected:
-	// The owning character
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
-	TObjectPtr<ACraftCharacter> Character;
-
 	// The item mesh
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
 	TObjectPtr<UStaticMeshComponent> StaticMesh;

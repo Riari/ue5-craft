@@ -10,6 +10,8 @@ AResourceNode::AResourceNode()
 	, HealthAttributeSet{CreateDefaultSubobject<UHealthAttributeSet>(TEXT("HealthAttributeSet"))}
 {
 	PrimaryActorTick.bCanEverTick = false;
+
+	SetReplicates(true);
 }
 
 void AResourceNode::BeginPlay()
@@ -39,24 +41,29 @@ void AResourceNode::OnHealthAttributeChanged(const FOnAttributeChangeData& Data)
 {
 	if (Data.NewValue <= 0.0f)
 	{
-		if (DestroySound)
-		{
-			UGameplayStatics::PlaySoundAtLocation(
-				GetWorld(),
-				DestroySound,
-				GetActorLocation()
-			);
-		}
-
-		if (DestroyParticles)
-		{
-			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-				GetWorld(),
-				DestroyParticles,
-				GetActorLocation()
-			);
-		}
-
-		Destroy();
+		Multicast_OnDestroy();
 	}
+}
+
+void AResourceNode::Multicast_OnDestroy_Implementation()
+{
+	if (DestroySound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(
+			GetWorld(),
+			DestroySound,
+			GetActorLocation()
+		);
+	}
+
+	if (DestroyParticles)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(),
+			DestroyParticles,
+			GetActorLocation()
+		);
+	}
+
+	Destroy();
 }

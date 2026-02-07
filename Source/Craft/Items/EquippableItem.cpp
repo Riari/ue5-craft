@@ -38,44 +38,16 @@ void AEquippableItem::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	OnActorEndOverlap.RemoveAll(this);
 }
 
-void AEquippableItem::Server_TryEquip_Implementation(ACraftCharacter* CraftCharacter)
+void AEquippableItem::OnEquip(ACraftCharacter* Character)
 {
-	TryEquip(CraftCharacter);
-}
-
-void AEquippableItem::Server_Unequip_Implementation(ACraftCharacter* CraftCharacter)
-{
-	Unequip(CraftCharacter);
-}
-
-bool AEquippableItem::TryEquip(ACraftCharacter* CraftCharacter)
-{
-	check(CraftCharacter);
-
-	Character = CraftCharacter;
-
 	SetActorHiddenInGame(false);
+
 	StaticMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	StaticMesh->AttachToComponent(CraftCharacter->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, MainHandSocketName);
+	StaticMesh->AttachToComponent(Character->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, MainHandSocketName);
 
-	if (!HasAuthority())
+	if (UAbilitySystemComponent* ASC = Character->GetAbilitySystemComponent())
 	{
-		Server_TryEquip(CraftCharacter);
-		return true;
-	}
-
-	USkeletalMeshComponent* Mesh = Character->GetMesh();
-	UAnimInstance* AnimInstance = Mesh ? Mesh->GetAnimInstance() : nullptr;
-
-	ensureMsgf(AnimInstance, TEXT("Character %s does not have an AnimInstance"), *GetNameSafe(Character));
-
-	if (AnimInstance)
-	{
-		AnimInstance->OnPlayMontageNotifyBegin.AddDynamic(this, &AEquippableItem::OnMontageNotifyBegin);
-	}
-
-	if (UAbilitySystemComponent* ASC = CraftCharacter->GetAbilitySystemComponent())
-	{
+		
 		for (TSubclassOf<UBaseGameplayAbility>& Ability : Abilities)
 		{
 			FGameplayAbilitySpec Spec(Ability, 1, static_cast<int32>(Ability.GetDefaultObject()->GetAbilityInputID()), this);
@@ -84,20 +56,14 @@ bool AEquippableItem::TryEquip(ACraftCharacter* CraftCharacter)
 		}
 	}
 
-	return true;
+	Character->GetMesh()->GetAnimInstance()->OnPlayMontageNotifyBegin.AddDynamic(this, &AEquippableItem::OnMontageNotifyBegin);
 }
 
-void AEquippableItem::Unequip(ACraftCharacter* CraftCharacter)
+void AEquippableItem::OnUnequip(ACraftCharacter* Character)
 {
 	SetActorHiddenInGame(true);
 
-	if (!HasAuthority())
-	{
-		Server_Unequip(CraftCharacter);
-		return;
-	}
-
-	if (UAbilitySystemComponent* ASC = CraftCharacter->GetAbilitySystemComponent())
+	if (UAbilitySystemComponent* ASC = Character->GetAbilitySystemComponent())
 	{
 		for (FGameplayAbilitySpecHandle& AbilityHandle : GrantedAbilities)
 		{
@@ -108,7 +74,6 @@ void AEquippableItem::Unequip(ACraftCharacter* CraftCharacter)
 	}
 
 	Character->GetMesh()->GetAnimInstance()->OnPlayMontageNotifyBegin.RemoveAll(this);
-	Character = nullptr;
 }
 
 void AEquippableItem::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -133,6 +98,9 @@ void AEquippableItem::OnHit(AActor* OtherActor)
 	DrawDebugSphere(GetWorld(), StaticMesh->GetComponentLocation(), 10, 12, FColor::Green, false, 1.0f);
 			
 	IHittable::Execute_OnHit(OtherActor);
+
+	ACraftCharacter* Character = GetOwner<ACraftCharacter>();
+	check(Character);
 
 	FVector HitLocation = StaticMesh->GetComponentLocation();
 	FRotator HitRotation = Character ? Character->GetActorRotation() : FRotator::ZeroRotator;
