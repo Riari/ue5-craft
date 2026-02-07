@@ -68,7 +68,7 @@ void ACraftCharacter::OnRep_PlayerState()
 
 UAbilitySystemComponent* ACraftCharacter::GetAbilitySystemComponent() const
 {
-	return AbilitySystemComponent;
+	return GetPlayerState<ACraftPlayerState>()->GetAbilitySystemComponent();
 }
 
 UEquipmentComponent* ACraftCharacter::GetEquipmentComponent() const
@@ -162,7 +162,8 @@ void ACraftCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 
 void ACraftCharacter::SendAbilityLocalInput(const FInputActionValue& Value, int32 InputID)
 {
-	if (!AbilitySystemComponent) return;
+	UAbilitySystemComponent* AbilitySystemComponent = GetAbilitySystemComponent();
+	check(AbilitySystemComponent);
 
 	Value.Get<bool>()
 		? AbilitySystemComponent->AbilityLocalInputPressed(InputID)
@@ -181,7 +182,7 @@ void ACraftCharacter::Initialize()
 	ACraftPlayerState* PS = GetPlayerState<ACraftPlayerState>();
 	if (PS)
 	{
-		AbilitySystemComponent = Cast<UAbilitySystemComponent>(PS->GetAbilitySystemComponent());
+		UAbilitySystemComponent* AbilitySystemComponent = Cast<UAbilitySystemComponent>(PS->GetAbilitySystemComponent());
 		AbilitySystemComponent->InitAbilityActorInfo(PS, this);
 		PS->Initialize();
 	}

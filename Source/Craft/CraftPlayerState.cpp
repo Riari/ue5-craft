@@ -10,8 +10,8 @@
 
 ACraftPlayerState::ACraftPlayerState()
 	: AbilitySystemComponent{CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"))}
-	, StaminaAttributeSet{CreateDefaultSubobject<UStaminaAttributeSet>(TEXT("StaminaAttributeSet"))}
 	, HealthAttributeSet{CreateDefaultSubobject<UHealthAttributeSet>(TEXT("HealthAttributeSet"))}
+	, StaminaAttributeSet{CreateDefaultSubobject<UStaminaAttributeSet>(TEXT("StaminaAttributeSet"))}
 	, InventoryContainer{CreateDefaultSubobject<UItemContainerComponent>(TEXT("InventoryContainer"))}
 	, HotbarContainer{CreateDefaultSubobject<UItemContainerComponent>(TEXT("HotbarContainer"))}
 	, EquipmentComponent{CreateDefaultSubobject<UEquipmentComponent>(TEXT("EquipmentComponent"))}
@@ -56,14 +56,14 @@ void ACraftPlayerState::Client_OnAbilitySystemInitialized_Implementation()
 	OnAbilitySystemInitialized.Broadcast();
 }
 
-void ACraftPlayerState::Client_OnStaminaChanged_Implementation(float OldValue, float NewValue, float Max)
+void ACraftPlayerState::Client_OnHealthChanged_Implementation(float OldValue, float NewValue, float Max, float Percent)
 {
-	OnClientStaminaChanged.Broadcast(OldValue, NewValue, Max);
+	OnClientHealthChanged.Broadcast(OldValue, NewValue, Max, Percent);
 }
 
-void ACraftPlayerState::Client_OnHealthChanged_Implementation(float OldValue, float NewValue, float Max)
+void ACraftPlayerState::Client_OnStaminaChanged_Implementation(float OldValue, float NewValue, float Max, float Percent)
 {
-	OnClientHealthChanged.Broadcast(OldValue, NewValue, Max);
+	OnClientStaminaChanged.Broadcast(OldValue, NewValue, Max, Percent);
 }
 
 void ACraftPlayerState::InitializeAbilitySystem()
@@ -100,16 +100,16 @@ void ACraftPlayerState::InitializeAbilitySystem()
 	}
 
 	// Ability delegates
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(StaminaAttributeSet->GetStaminaAttribute()).AddUObject(this, &ThisClass::OnStaminaAttributeChanged);
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(HealthAttributeSet->GetHealthAttribute()).AddUObject(this, &ThisClass::OnHealthAttributeChanged);
-}
-
-void ACraftPlayerState::OnStaminaAttributeChanged(const FOnAttributeChangeData& Data)
-{
-	Client_OnStaminaChanged(Data.OldValue, Data.NewValue, StaminaAttributeSet->GetMaxStamina());
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(StaminaAttributeSet->GetStaminaAttribute()).AddUObject(this, &ThisClass::OnStaminaAttributeChanged);
 }
 
 void ACraftPlayerState::OnHealthAttributeChanged(const FOnAttributeChangeData& Data)
 {
-	Client_OnHealthChanged(Data.OldValue, Data.NewValue, HealthAttributeSet->GetMaxHealth());
+	Client_OnHealthChanged(Data.OldValue, Data.NewValue, HealthAttributeSet->GetMaxHealth(), HealthAttributeSet->GetPercentage());
+}
+
+void ACraftPlayerState::OnStaminaAttributeChanged(const FOnAttributeChangeData& Data)
+{
+	Client_OnStaminaChanged(Data.OldValue, Data.NewValue, StaminaAttributeSet->GetMaxStamina(), StaminaAttributeSet->GetPercentage());
 }

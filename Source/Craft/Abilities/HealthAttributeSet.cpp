@@ -37,6 +37,11 @@ void UHealthAttributeSet::GetLifetimeReplicatedProps(TArray<class FLifetimePrope
 	DOREPLIFETIME(UHealthAttributeSet, Damage);
 }
 
+float UHealthAttributeSet::GetPercentage()
+{
+	return Health.GetCurrentValue() / MaxHealth.GetCurrentValue();
+}
+
 void UHealthAttributeSet::ClampAttributeOnChange(const FGameplayAttribute& Attribute, float& NewValue) const
 {
 	if (Attribute == GetHealthAttribute())

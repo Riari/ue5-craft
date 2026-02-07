@@ -32,6 +32,9 @@ public:
 	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
 	
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	
+	UFUNCTION(BlueprintCallable)
+	float GetPercentage();
 
 protected:
 	virtual void ClampAttributeOnChange(const FGameplayAttribute& Attribute, float& NewValue) const override;

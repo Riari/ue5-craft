@@ -1,10 +1,11 @@
 #include "EquippableItem.h"
 
 #include "AbilitySystemComponent.h"
+#include "AbilitySystemGlobals.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Craft/CraftCharacter.h"
 #include "Craft/Abilities/BaseGameplayAbility.h"
-#include "Craft/Interfaces/Hittable.h"
+#include "Craft/Interfaces/IHittable.h"
 #include "Kismet/GameplayStatics.h"
 
 AEquippableItem::AEquippableItem()
@@ -79,6 +80,8 @@ void AEquippableItem::OnUnequip(ACraftCharacter* Character)
 void AEquippableItem::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	if (OtherActor == GetOwner()) return;
+
 	if (OtherActor->Implements<UHittable>())
 	{
 		FGameplayTagQuery ValidItemTagQuery = IHittable::Execute_GetValidItemTagQuery(OtherActor);
@@ -117,20 +120,17 @@ void AEquippableItem::OnHit(AActor* OtherActor)
 		}
 	}
 
-	if (OtherActor->Implements<UAbilitySystemInterface>())
+	UAbilitySystemComponent* OtherASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(OtherActor);
+	if (OtherASC)
 	{
-		UAbilitySystemComponent* OtherASC = OtherActor->FindComponentByClass<UAbilitySystemComponent>();
-		if (OtherASC)
+		for (TSubclassOf<UGameplayEffect>& HitEffectClass : HitEffects)
 		{
-			for (TSubclassOf<UGameplayEffect>& HitEffectClass : HitEffects)
-			{
-				FGameplayEffectContextHandle EffectContext = OtherASC->MakeEffectContext();
-				FGameplayEffectSpecHandle SpecHandle = OtherASC->MakeOutgoingSpec(HitEffectClass, 1.0f, EffectContext);
+			FGameplayEffectContextHandle EffectContext = OtherASC->MakeEffectContext();
+			FGameplayEffectSpecHandle SpecHandle = OtherASC->MakeOutgoingSpec(HitEffectClass, 1.0f, EffectContext);
 
-				if (SpecHandle.IsValid())
-				{
-					OtherASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-				}
+			if (SpecHandle.IsValid())
+			{
+				OtherASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 			}
 		}
 	}

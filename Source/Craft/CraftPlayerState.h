@@ -9,7 +9,7 @@
 #include "Items/ItemContainerComponent.h"
 #include "CraftPlayerState.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnAttributeChanged, float, OldValue, float, NewValue, float, MaxValue);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnAttributeChanged, float, OldValue, float, NewValue, float, MaxValue, float, Percent);
 
 UCLASS()
 class CRAFT_API ACraftPlayerState : public APlayerState, public IAbilitySystemInterface
@@ -30,10 +30,10 @@ public:
 	UEquipmentComponent* GetEquipmentComponent() const;
 
 	UPROPERTY(BlueprintAssignable)
-	FOnAttributeChanged OnClientStaminaChanged;
+	FOnAttributeChanged OnClientHealthChanged;
 
 	UPROPERTY(BlueprintAssignable)
-	FOnAttributeChanged OnClientHealthChanged;
+	FOnAttributeChanged OnClientStaminaChanged;
 	
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAbilitySystemInitialized);
 
@@ -48,10 +48,10 @@ protected:
 	TObjectPtr<class UAbilitySystemComponent> AbilitySystemComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = Abilities, meta = (AllowPrivateAccess = true))
-	TObjectPtr<class UStaminaAttributeSet> StaminaAttributeSet;
+	TObjectPtr<class UHealthAttributeSet> HealthAttributeSet;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = Abilities, meta = (AllowPrivateAccess = true))
-	TObjectPtr<class UHealthAttributeSet> HealthAttributeSet;
+	TObjectPtr<class UStaminaAttributeSet> StaminaAttributeSet;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Abilities)
 	TArray<TSubclassOf<class UBaseGameplayAbility>> DefaultAbilities;
@@ -69,13 +69,13 @@ protected:
 	TObjectPtr<class UEquipmentComponent> EquipmentComponent;
 	
 	void InitializeAbilitySystem();
-	
-	UFUNCTION(Client, Reliable)
-	void Client_OnStaminaChanged(float OldValue, float NewValue, float Max);
 
 	UFUNCTION(Client, Reliable)
-	void Client_OnHealthChanged(float OldValue, float NewValue, float Max);
+	void Client_OnHealthChanged(float OldValue, float NewValue, float Max, float Percent);
 
-	void OnStaminaAttributeChanged(const FOnAttributeChangeData& Data);
+	UFUNCTION(Client, Reliable)
+	void Client_OnStaminaChanged(float OldValue, float NewValue, float Max, float Percent);
+
 	void OnHealthAttributeChanged(const FOnAttributeChangeData& Data);
+	void OnStaminaAttributeChanged(const FOnAttributeChangeData& Data);
 };

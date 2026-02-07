@@ -4,7 +4,7 @@
 #include "AbilitySystemInterface.h"
 #include "InputActionValue.h"
 #include "GameFramework/Character.h"
-#include "Interfaces/AnimNotifiable.h"
+#include "Interfaces/IAnimNotifiable.h"
 #include "Items/EquipmentComponent.h"
 #include "Items/ItemContainerComponent.h"
 #include "Logging/LogMacros.h"
@@ -104,8 +104,6 @@ public:
 	bool TryAddItemToInventory(ABaseItem* Item, int32 Quantity = 1);
 
 protected:
-	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
-	
 	void Initialize();
 
 	void Move(const FInputActionValue& Value);

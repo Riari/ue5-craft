@@ -18,6 +18,11 @@ void UStaminaAttributeSet::GetLifetimeReplicatedProps(TArray<class FLifetimeProp
 	DOREPLIFETIME(UStaminaAttributeSet, StaminaRegen);
 }
 
+float UStaminaAttributeSet::GetPercentage()
+{
+	return Stamina.GetCurrentValue() / MaxStamina.GetCurrentValue();
+}
+
 void UStaminaAttributeSet::ClampAttributeOnChange(const FGameplayAttribute& Attribute, float& NewValue) const
 {
 	if (Attribute == GetStaminaAttribute())
