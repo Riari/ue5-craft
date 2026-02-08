@@ -98,8 +98,6 @@ void AEquippableItem::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedCom
 
 void AEquippableItem::OnHit(AActor* OtherActor)
 {
-	DrawDebugSphere(GetWorld(), StaticMesh->GetComponentLocation(), 10, 12, FColor::Green, false, 1.0f);
-			
 	IHittable::Execute_OnHit(OtherActor);
 
 	ACraftCharacter* Character = GetOwner<ACraftCharacter>();
@@ -169,4 +167,14 @@ void AEquippableItem::ExecutePrimaryAction()
 void AEquippableItem::ExecuteSecondaryAction()
 {
 	OnExecuteSecondaryAction.ExecuteIfBound(SecondaryActionMontage);
+}
+
+UAnimMontage* AEquippableItem::GetPrimaryActionMontage() const
+{
+	return PrimaryActionMontage;
+}
+
+UAnimMontage* AEquippableItem::GetSecondaryActionMontage() const
+{
+	return SecondaryActionMontage;
 }

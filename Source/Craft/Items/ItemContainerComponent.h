@@ -81,22 +81,22 @@ public:
 	FSlotActivationResult TryActivateSlot(int32 SlotIndex);
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
 	int32 Capacity;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
 	bool CanActivateSlots;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
 	int32 ActiveSlot{-1};
 
-	UPROPERTY(BlueprintAssignable, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(BlueprintAssignable, meta = (AllowPrivateAccess = true))
 	FSlotDelegate SlotUpdatedDelegate;
 
-	UPROPERTY(BlueprintAssignable, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(BlueprintAssignable, meta = (AllowPrivateAccess = true))
 	FSlotDelegate SlotActivatedDelegate;
 
-	UPROPERTY(BlueprintAssignable, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(BlueprintAssignable, meta = (AllowPrivateAccess = true))
 	FSlotDelegate SlotDeactivatedDelegate;
 
 	TArray<FInventorySlot> Slots;

@@ -5,7 +5,6 @@
 #include "GameplayAbilitySpecHandle.h"
 #include "GameplayEffect.h"
 #include "NiagaraSystem.h"
-#include "Craft/CraftCharacter.h"
 #include "EquippableItem.generated.h"
 
 UCLASS()
@@ -24,6 +23,12 @@ public:
 	
 	virtual void ExecutePrimaryAction() override;
 	virtual void ExecuteSecondaryAction() override;
+
+	UFUNCTION(BlueprintCallable)
+	UAnimMontage* GetPrimaryActionMontage() const;
+
+	UFUNCTION(BlueprintCallable)
+	UAnimMontage* GetSecondaryActionMontage() const;
 
 protected:
 	// The item mesh
