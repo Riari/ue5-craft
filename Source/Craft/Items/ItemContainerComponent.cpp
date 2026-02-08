@@ -90,8 +90,16 @@ void UItemContainerComponent::OnRep_ActiveSlot()
 {
 	if (PreviousActiveSlot != ActiveSlot)
 	{
-		SlotDeactivatedDelegate.Broadcast(PreviousActiveSlot, Slots[PreviousActiveSlot]);
-		SlotActivatedDelegate.Broadcast(ActiveSlot, Slots[ActiveSlot]);
+		if (PreviousActiveSlot != INDEX_NONE)
+		{
+			SlotDeactivatedDelegate.Broadcast(PreviousActiveSlot, Slots[PreviousActiveSlot]);
+		}
+
+		if (ActiveSlot != INDEX_NONE)
+		{
+			SlotActivatedDelegate.Broadcast(ActiveSlot, Slots[ActiveSlot]);
+		}
+
 		PreviousActiveSlot = ActiveSlot;
 	}
 }
