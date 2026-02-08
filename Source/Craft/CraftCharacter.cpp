@@ -92,13 +92,11 @@ float ACraftCharacter::PlayActionMontageForItem(const TObjectPtr<ABaseItem> Item
 	return 0.f;
 }
 
-void ACraftCharacter::AnimNotify(FName NotifyName)
-{
-}
-
 bool ACraftCharacter::TrySpawnItemToInventory(TSubclassOf<ABaseItem> ItemClass, int32 Quantity)
 {
 	ABaseItem* Item = GetWorld()->SpawnActor<ABaseItem>(ItemClass);
+	Item->SetActorHiddenInGame(true);
+	Item->SetActorEnableCollision(false);
 	return Item && TryAddItemToInventory(Item, Quantity);
 }
 
@@ -117,8 +115,6 @@ void ACraftCharacter::Client_OnItemPickUp_Implementation(ABaseItem* Item)
 		ItemPickUpSound,
 		GetActorLocation()
 	);
-
-	TryAddItemToInventory(Item);
 }
 
 bool ACraftCharacter::TryAddItemToInventory(ABaseItem* Item, int32 Quantity)
@@ -130,8 +126,8 @@ bool ACraftCharacter::TryAddItemToInventory(ABaseItem* Item, int32 Quantity)
 	int HotbarSlotIndex = HotbarContainer->FindFirstUsableSlotIndex(Item->GetDefinition(), Quantity);
 	if (HotbarSlotIndex != -1)
 	{
-		HotbarContainer->AddItem(Item, Quantity, HotbarSlotIndex);
-		return true;
+		FSlotTransactionResult Result = HotbarContainer->AddItem(Item, Quantity, HotbarSlotIndex);
+		return Result.Success;
 	}
 
 	return false;

@@ -1,6 +1,8 @@
 ﻿#include "HealthAttributeSet.h"
 
 #include "GameplayEffectExtension.h"
+#include "Craft/CraftCharacter.h"
+#include "Craft/Interfaces/IHarvestable.h"
 #include "Net/UnrealNetwork.h"
 
 UHealthAttributeSet::UHealthAttributeSet()
@@ -19,6 +21,14 @@ void UHealthAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCall
 		const float DamageValue = GetDamage();
 		const float OldHealth = GetHealth();
 		const float MaxHealthValue = GetMaxHealth();
+
+		// TODO: Not the best place to put this
+		AActor* Instigator = Data.EffectSpec.GetContext().GetInstigator();
+		AActor* Owner = GetOwningActor();
+		if (Owner->Implements<UHarvestable>())
+		{
+			IHarvestable::Execute_OnHarvest(Owner, Instigator);
+		}
 
 		const float NewHealth = FMath::Clamp(OldHealth - DamageValue, 0.f, MaxHealthValue);
 		SetHealth(NewHealth);

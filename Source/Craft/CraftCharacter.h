@@ -21,7 +21,7 @@ struct FInputActionValue;
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
 UCLASS(config=Game)
-class ACraftCharacter : public ACharacter, public IAnimNotifiable, public IAbilitySystemInterface, public IHittable
+class ACraftCharacter : public ACharacter, public IAbilitySystemInterface, public IHittable
 {
 	GENERATED_BODY()
 
@@ -103,8 +103,6 @@ public:
 	UEquipmentComponent* GetEquipmentComponent() const;
 
 	float PlayActionMontageForItem(TObjectPtr<ABaseItem> Item);
-
-	virtual void AnimNotify(FName NotifyName) override;
 
 	bool TrySpawnItemToInventory(TSubclassOf<ABaseItem> ItemClass, int32 Quantity = 1);
 

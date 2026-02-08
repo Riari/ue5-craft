@@ -13,7 +13,6 @@ struct FMontageSet
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ActionMontages")
 	TArray<TObjectPtr<UAnimMontage>> Montages;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ActionMontages", meta = (ClampMin = "0"))
 	int32 NextIndex = 0;
 };
 

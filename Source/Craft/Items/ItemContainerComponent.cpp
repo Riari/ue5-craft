@@ -1,10 +1,20 @@
 #include "ItemContainerComponent.h"
 
 #include "BaseItem.h"
+#include "Net/UnrealNetwork.h"
 
 UItemContainerComponent::UItemContainerComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+	SetIsReplicatedByDefault(true);
+}
+
+void UItemContainerComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(UItemContainerComponent, Slots);
+	DOREPLIFETIME(UItemContainerComponent, ActiveSlot);
 }
 
 void UItemContainerComponent::BeginPlay()
@@ -37,7 +47,7 @@ FSlotTransactionResult UItemContainerComponent::AddItem(ABaseItem* Item, int32 Q
 	{
 		// TODO: Implement proper moving and replacement of items
 		// For now, just write to the slot without validating anything
-		Slot.Quantity = Quantity;
+		Slot.Quantity += Quantity;
 		Slot.ItemDefinition = Item->GetDefinition();
 		Slot.ItemActor = Item;
 		Result.Success = true;
@@ -53,6 +63,37 @@ FSlotActivationResult UItemContainerComponent::TryActivateSlot(int32 SlotIndex)
 		return {.Success = false};
 
 	return ActivateSlot(SlotIndex);
+}
+
+void UItemContainerComponent::OnRep_Slots()
+{
+	for (int32 i = 0; i < Slots.Num(); i++)
+	{
+		FInventorySlot& CurrentSlot = Slots[i];
+		if (PreviousSlots.IsValidIndex(i))
+		{
+			FInventorySlot& PreviousSlot = PreviousSlots[i];
+
+			if (PreviousSlot != CurrentSlot)
+			{
+				SlotUpdatedDelegate.Broadcast(i, CurrentSlot);
+			}
+		}
+		else
+		{
+			SlotUpdatedDelegate.Broadcast(i, CurrentSlot);
+		}
+	}
+}
+
+void UItemContainerComponent::OnRep_ActiveSlot()
+{
+	if (PreviousActiveSlot != ActiveSlot)
+	{
+		SlotDeactivatedDelegate.Broadcast(PreviousActiveSlot, Slots[PreviousActiveSlot]);
+		SlotActivatedDelegate.Broadcast(ActiveSlot, Slots[ActiveSlot]);
+		PreviousActiveSlot = ActiveSlot;
+	}
 }
 
 FSlotActivationResult UItemContainerComponent::ActivateSlot(int32 SlotIndex)

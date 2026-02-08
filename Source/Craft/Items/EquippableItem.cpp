@@ -121,11 +121,13 @@ void AEquippableItem::OnHit(AActor* OtherActor)
 		for (TSubclassOf<UGameplayEffect>& HitEffectClass : HitEffects)
 		{
 			FGameplayEffectContextHandle EffectContext = OtherASC->MakeEffectContext();
+			EffectContext.AddInstigator(Character, this);
 			FGameplayEffectSpecHandle SpecHandle = OtherASC->MakeOutgoingSpec(HitEffectClass, 1.0f, EffectContext);
 
 			if (SpecHandle.IsValid())
 			{
-				OtherASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+				UAbilitySystemComponent* ASC = Character->GetAbilitySystemComponent();
+				ASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), OtherASC);
 			}
 		}
 	}

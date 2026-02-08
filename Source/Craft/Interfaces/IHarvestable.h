@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Craft/Items/BaseItem.h"
 #include "UObject/Interface.h"
 #include "IHarvestable.generated.h"
 
@@ -16,8 +17,11 @@ class CRAFT_API IHarvestable
 
 public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Harvestable")
-	TSubclassOf<UItemDefinition> GetResourceItemClass() const;
+	TSubclassOf<ABaseItem> GetResourceItemActorClass() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Harvestable")
 	int32 GetResourceQuantityPerHit() const;
+	
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Harvestable")
+	void OnHarvest(AActor* Harvester);
 };

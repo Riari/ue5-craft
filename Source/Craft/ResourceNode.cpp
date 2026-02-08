@@ -1,6 +1,7 @@
 #include "ResourceNode.h"
 
 #include "AbilitySystemComponent.h"
+#include "CraftCharacter.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Abilities/HealthAttributeSet.h"
 #include "Kismet/GameplayStatics.h"
@@ -10,8 +11,7 @@ AResourceNode::AResourceNode()
 	, HealthAttributeSet{CreateDefaultSubobject<UHealthAttributeSet>(TEXT("HealthAttributeSet"))}
 {
 	PrimaryActorTick.bCanEverTick = false;
-
-	SetReplicates(true);
+	bReplicates = true;
 }
 
 void AResourceNode::BeginPlay()
@@ -33,6 +33,26 @@ UAbilitySystemComponent* AResourceNode::GetAbilitySystemComponent() const
 bool AResourceNode::CanBeHitWith_Implementation(AEquippableItem* Item) const
 {
 	return CanBeHitWith_Default(this, Item);
+}
+
+TSubclassOf<ABaseItem> AResourceNode::GetResourceItemActorClass_Implementation() const
+{
+	return ResourceItemActorClass;
+}
+
+int32 AResourceNode::GetResourceQuantityPerHit_Implementation() const
+{
+	return 1;
+}
+
+void AResourceNode::OnHarvest_Implementation(AActor* Harvester)
+{
+	if (ACraftCharacter* Character = Cast<ACraftCharacter>(Harvester))
+	{
+		TSubclassOf<ABaseItem> ActorClass = Execute_GetResourceItemActorClass(this);
+		int32 Quantity = Execute_GetResourceQuantityPerHit(this);
+		Character->TrySpawnItemToInventory(ActorClass, Quantity);
+	}
 }
 
 void AResourceNode::InitializeAttributes()

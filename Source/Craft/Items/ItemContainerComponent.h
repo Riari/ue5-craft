@@ -34,6 +34,13 @@ struct FInventorySlot
 	{
 		return ItemDefinition ? ItemDefinition->MaxStackSize - Quantity : 0;
 	}
+
+	bool operator==(const FInventorySlot& CurrentSlot) const
+	{
+		return ItemDefinition == CurrentSlot.ItemDefinition
+			&& ItemActor == CurrentSlot.ItemActor
+			&& Quantity == CurrentSlot.Quantity;
+	}
 };
 
 USTRUCT(BlueprintType)
@@ -62,6 +69,7 @@ struct FSlotActivationResult
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FSlotDelegate, int32, Index, FInventorySlot, Slot);
 
+// TODO: Refactor item containers so that item actors are only spawned lazily
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class CRAFT_API UItemContainerComponent : public UActorComponent
 {
@@ -70,6 +78,8 @@ class CRAFT_API UItemContainerComponent : public UActorComponent
 public:
 	UItemContainerComponent();
 
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	
 	virtual void BeginPlay() override;
 
 	UFUNCTION(BlueprintCallable)
@@ -87,7 +97,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
 	bool CanActivateSlots;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing=OnRep_ActiveSlot, meta = (AllowPrivateAccess = true))
 	int32 ActiveSlot{-1};
 
 	UPROPERTY(BlueprintAssignable, meta = (AllowPrivateAccess = true))
@@ -99,7 +109,18 @@ protected:
 	UPROPERTY(BlueprintAssignable, meta = (AllowPrivateAccess = true))
 	FSlotDelegate SlotDeactivatedDelegate;
 
+	UPROPERTY(ReplicatedUsing=OnRep_Slots)
 	TArray<FInventorySlot> Slots;
+
+	UFUNCTION()
+	void OnRep_Slots();
+
+	UFUNCTION()
+	void OnRep_ActiveSlot();
+	
+	// Client-side cache to detect which slots have changed
+	TArray<FInventorySlot> PreviousSlots;
+	int32 PreviousActiveSlot{-1};
 
 	FSlotActivationResult ActivateSlot(int32 SlotIndex);
 	FSlotActivationResult DeactivateSlot(int32 SlotIndex);
