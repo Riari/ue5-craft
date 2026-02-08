@@ -30,6 +30,11 @@ UAbilitySystemComponent* AResourceNode::GetAbilitySystemComponent() const
 	return AbilitySystemComponent;
 }
 
+bool AResourceNode::CanBeHitWith_Implementation(AEquippableItem* Item) const
+{
+	return CanBeHitWith_Default(this, Item);
+}
+
 void AResourceNode::InitializeAttributes()
 {
 	if (!AbilitySystemComponent) return;

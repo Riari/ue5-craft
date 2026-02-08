@@ -18,10 +18,15 @@ class CRAFT_API IHittable
 public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Hittable")
 	FGameplayTagQuery GetValidItemTagQuery() const;
-	
+
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Hittable")
 	int32 GetMinimumValidItemGrade() const;
-	
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Hittable")
+	bool CanBeHitWith(class AEquippableItem* Item) const;
+
+	static bool CanBeHitWith_Default(const UObject* Hittable, const class AEquippableItem* Item);
+
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Hittable")
 	void OnHit();
 };

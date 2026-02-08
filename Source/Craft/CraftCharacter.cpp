@@ -12,6 +12,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "Abilities/InputID.h"
+#include "Items/EquippableItem.h"
 #include "Items/ItemContainerComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
@@ -19,6 +20,7 @@
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
 ACraftCharacter::ACraftCharacter()
+	: ActionMontageComponent{CreateDefaultSubobject<UActionMontageComponent>("ActionMontageComponent")}
 {
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 
@@ -76,6 +78,20 @@ UEquipmentComponent* ACraftCharacter::GetEquipmentComponent() const
 	return GetPlayerState<ACraftPlayerState>()->GetEquipmentComponent();
 }
 
+float ACraftCharacter::PlayActionMontageForItem(const TObjectPtr<ABaseItem> Item)
+{
+	if (!HasAuthority()) return 0.f;
+
+	UItemDefinition* ItemDefinition = Item->GetDefinition();
+	if (UAnimMontage* Montage = ActionMontageComponent->GetNextMontageByTag(ItemDefinition->Tags.First()))
+	{
+		Multicast_PlayMontage(Montage);
+		return Montage->GetPlayLength();
+	}
+	
+	return 0.f;
+}
+
 void ACraftCharacter::AnimNotify(FName NotifyName)
 {
 }
@@ -119,6 +135,19 @@ bool ACraftCharacter::TryAddItemToInventory(ABaseItem* Item, int32 Quantity)
 	}
 
 	return false;
+}
+
+bool ACraftCharacter::CanBeHitWith_Implementation(AEquippableItem* Item) const
+{
+	return !bIsDead && CanBeHitWith_Default(this, Item);
+}
+
+void ACraftCharacter::OnDeath()
+{
+	bIsDead = true;
+	GetCharacterMovement()->DisableMovement();
+	DisableInput(GetWorld()->GetFirstPlayerController());
+	Multicast_PlayMontage(DeathMontage);
 }
 
 void ACraftCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -190,6 +219,8 @@ void ACraftCharacter::Initialize()
 
 void ACraftCharacter::Move(const FInputActionValue& Value)
 {
+	if (bIsDead) return;
+
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
 	if (Controller != nullptr)
@@ -219,6 +250,8 @@ void ACraftCharacter::Move(const FInputActionValue& Value)
 
 void ACraftCharacter::Look(const FInputActionValue& Value)
 {
+	if (bIsDead) return;
+
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
 
 	if (Controller != nullptr)
@@ -257,10 +290,7 @@ void ACraftCharacter::ActivateHotbar(int32 SlotIndex)
 
 		if (Result.ItemActor)
 		{
-			if (EquipmentComponent->TryEquipMainHandItem(Result.ItemActor))
-			{
-				Result.ItemActor->OnExecutePrimaryAction.BindUObject(this, &ACraftCharacter::OnExecutePrimaryAction);
-			}
+			EquipmentComponent->TryEquipMainHandItem(Result.ItemActor);
 		}
 	}
 }
@@ -280,11 +310,6 @@ void ACraftCharacter::Server_SetActorRotation_Implementation(FRotator NewRotatio
 	ForceNetUpdate();
 }
 
-void ACraftCharacter::PlayMontage(TObjectPtr<UAnimMontage> Montage)
-{
-	Multicast_PlayMontage(Montage);
-}
-
 void ACraftCharacter::Multicast_PlayMontage_Implementation(UAnimMontage* Montage)
 {
 	check(Montage);
@@ -299,14 +324,3 @@ void ACraftCharacter::Server_ActivateHotbar_Implementation(int32 SlotIndex)
 {
 	ActivateHotbar(SlotIndex);
 }
-
-void ACraftCharacter::OnExecutePrimaryAction(TObjectPtr<UAnimMontage> Montage)
-{
-	PlayMontage(Montage);
-}
-
-void ACraftCharacter::OnExecuteSecondaryAction(TObjectPtr<UAnimMontage> Montage)
-{
-	PlayMontage(Montage);
-}
-

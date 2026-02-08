@@ -23,12 +23,8 @@ public:
 	
 	virtual void ExecutePrimaryAction() override;
 	virtual void ExecuteSecondaryAction() override;
-
-	UFUNCTION(BlueprintCallable)
-	UAnimMontage* GetPrimaryActionMontage() const;
-
-	UFUNCTION(BlueprintCallable)
-	UAnimMontage* GetSecondaryActionMontage() const;
+	
+	float GetLatestActionMontagePlayLength() const { return LastActionMontagePlayLength; }
 
 protected:
 	// The item mesh
@@ -58,14 +54,6 @@ protected:
 	// Handles of granted abilities, used for removing them on unequip
 	TArray<FGameplayAbilitySpecHandle> GrantedAbilities;
 
-	// Montage to play when executing primary action
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
-	TObjectPtr<UAnimMontage> PrimaryActionMontage;
-
-	// Montage to play when executing secondary action
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
-	TObjectPtr<UAnimMontage> SecondaryActionMontage;
-
 	const char* MainHandSocketName = "Socket_HandR";
 	const char* SwingStartNotify = "SwingStart";
 	const char* SwingEndNotify = "SwingEnd";
@@ -80,4 +68,6 @@ protected:
 
 	UFUNCTION(NetMulticast, Unreliable)
 	void Multicast_PlayHitEffects(const FVector& Location, const FRotator& Rotation);
+	
+	float LastActionMontagePlayLength{0.f};
 };

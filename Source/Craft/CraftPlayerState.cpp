@@ -1,6 +1,7 @@
 #include "CraftPlayerState.h"
 
 #include "AbilitySystemComponent.h"
+#include "CraftCharacter.h"
 #include "Abilities/BaseGameplayAbility.h"
 #include "Abilities/HealthAttributeSet.h"
 #include "Abilities/StaminaAttributeSet.h"
@@ -106,6 +107,11 @@ void ACraftPlayerState::InitializeAbilitySystem()
 
 void ACraftPlayerState::OnHealthAttributeChanged(const FOnAttributeChangeData& Data)
 {
+	if (Data.NewValue <= 0.f)
+	{
+		GetPawn<ACraftCharacter>()->OnDeath();
+	}
+	
 	Client_OnHealthChanged(Data.OldValue, Data.NewValue, HealthAttributeSet->GetMaxHealth(), HealthAttributeSet->GetPercentage());
 }
 

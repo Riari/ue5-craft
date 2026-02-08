@@ -3,8 +3,10 @@
 #include "CoreMinimal.h"
 #include "AbilitySystemInterface.h"
 #include "InputActionValue.h"
+#include "Animations/ActionMontageComponent.h"
 #include "GameFramework/Character.h"
 #include "Interfaces/IAnimNotifiable.h"
+#include "Interfaces/IHittable.h"
 #include "Items/EquipmentComponent.h"
 #include "Items/ItemContainerComponent.h"
 #include "Logging/LogMacros.h"
@@ -19,7 +21,7 @@ struct FInputActionValue;
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
 UCLASS(config=Game)
-class ACraftCharacter : public ACharacter, public IAnimNotifiable, public IAbilitySystemInterface
+class ACraftCharacter : public ACharacter, public IAnimNotifiable, public IAbilitySystemInterface, public IHittable
 {
 	GENERATED_BODY()
 
@@ -28,6 +30,9 @@ class ACraftCharacter : public ACharacter, public IAnimNotifiable, public IAbili
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = true))
 	TObjectPtr<UCameraComponent> FollowCamera;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animation, meta = (AllowPrivateAccess = true))
+	TObjectPtr<UActionMontageComponent> ActionMontageComponent;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = true))
 	TObjectPtr<UInputMappingContext> DefaultMappingContext;
@@ -83,6 +88,9 @@ class ACraftCharacter : public ACharacter, public IAnimNotifiable, public IAbili
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Animations, meta = (AllowPrivateAccess = true))
 	TObjectPtr<class UAnimMontage> HitReactionMontage;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Animations, meta = (AllowPrivateAccess = true))
+	TObjectPtr<class UAnimMontage> DeathMontage;
+
 public:
 	ACraftCharacter();
 	
@@ -93,6 +101,8 @@ public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 	UEquipmentComponent* GetEquipmentComponent() const;
+
+	float PlayActionMontageForItem(TObjectPtr<ABaseItem> Item);
 
 	virtual void AnimNotify(FName NotifyName) override;
 
@@ -106,7 +116,16 @@ public:
 
 	bool TryAddItemToInventory(ABaseItem* Item, int32 Quantity = 1);
 
+	virtual bool CanBeHitWith_Implementation(class AEquippableItem* Item) const override;
+	
+	void OnDeath();
+
 protected:
+	UPROPERTY(ReplicatedUsing=OnRep_RemoteRotation)
+	FRotator ReplicatedRemoteRotation;
+
+	bool bIsDead{false};
+
 	void Initialize();
 
 	void Move(const FInputActionValue& Value);
@@ -119,9 +138,6 @@ protected:
 
 	void ActivateHotbar(int32 SlotIndex);
 	
-	UPROPERTY(ReplicatedUsing=OnRep_RemoteRotation)
-	FRotator ReplicatedRemoteRotation;
-	
 	UFUNCTION()
 	void OnRep_RemoteRotation();
 	
@@ -131,13 +147,8 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Server_ActivateHotbar(int32 SlotIndex);
 	
-	void PlayMontage(TObjectPtr<UAnimMontage> Montage);
-	
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_PlayMontage(UAnimMontage* Montage);
-
-	void OnExecutePrimaryAction(TObjectPtr<UAnimMontage> Montage);
-	void OnExecuteSecondaryAction(TObjectPtr<UAnimMontage> Montage);
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 

@@ -19,14 +19,10 @@ void UEquippedItemGameplayAbility::ApplyCooldown(const FGameplayAbilitySpecHandl
 			AEquippableItem* Item = Cast<AEquippableItem>(GetCurrentSourceObject());
 			check(Item);
 
-			float MontageLength{0.f};
-			if (CooldownType == EItemAbilityCooldownType::PrimaryActionMontageLength)
+			float MontageLength{1.f};
+			if (CooldownType == EItemAbilityCooldownType::ActionMontageLength)
 			{
-				MontageLength = Item->GetPrimaryActionMontage()->GetPlayLength();
-			}
-			else if (CooldownType == EItemAbilityCooldownType::SecondaryActionMontageLength)
-			{
-				MontageLength = Item->GetSecondaryActionMontage()->GetPlayLength();
+				MontageLength = Item->GetLatestActionMontagePlayLength();
 			}
 
 			SpecHandle.Data.Get()->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(CooldownMagnitudeTagName), MontageLength + MontageCooldownAdjustment);

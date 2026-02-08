@@ -84,10 +84,7 @@ void AEquippableItem::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedCom
 
 	if (OtherActor->Implements<UHittable>())
 	{
-		FGameplayTagQuery ValidItemTagQuery = IHittable::Execute_GetValidItemTagQuery(OtherActor);
-		int32 MinimumValidItemGrade = IHittable::Execute_GetMinimumValidItemGrade(OtherActor);
-
-		if (ValidItemTagQuery.Matches(Definition->Tags) && Definition->Grade >= MinimumValidItemGrade)
+		if (IHittable::Execute_CanBeHitWith(OtherActor, this))
 		{
 			OnHit(OtherActor);
 		}
@@ -161,20 +158,12 @@ void AEquippableItem::Multicast_PlayHitEffects_Implementation(const FVector& Loc
 
 void AEquippableItem::ExecutePrimaryAction()
 {
-	OnExecutePrimaryAction.ExecuteIfBound(PrimaryActionMontage);
+	ACraftCharacter* Character = GetOwner<ACraftCharacter>();
+	LastActionMontagePlayLength = Character->PlayActionMontageForItem(this);
 }
 
 void AEquippableItem::ExecuteSecondaryAction()
 {
-	OnExecuteSecondaryAction.ExecuteIfBound(SecondaryActionMontage);
-}
-
-UAnimMontage* AEquippableItem::GetPrimaryActionMontage() const
-{
-	return PrimaryActionMontage;
-}
-
-UAnimMontage* AEquippableItem::GetSecondaryActionMontage() const
-{
-	return SecondaryActionMontage;
+	ACraftCharacter* Character = GetOwner<ACraftCharacter>();
+	LastActionMontagePlayLength = Character->PlayActionMontageForItem(this);
 }

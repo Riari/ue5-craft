@@ -8,8 +8,7 @@ UENUM(BlueprintType)
 enum class EItemAbilityCooldownType : uint8
 {
 	Default,
-	PrimaryActionMontageLength,
-	SecondaryActionMontageLength,
+	ActionMontageLength,
 };
 
 UCLASS()
